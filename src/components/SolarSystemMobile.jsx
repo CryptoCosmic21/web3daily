@@ -1,5 +1,3 @@
-// File: SolarSystemMobile.jsx
-
 import React, {
   forwardRef,
   useRef,
@@ -18,20 +16,26 @@ import {
 } from '@react-three/drei';
 import { EffectComposer, Bloom } from '@react-three/postprocessing';
 import * as THREE from 'three';
-import { FastAverageColor } from 'fast-average-color'; // <--- Named
+import { FastAverageColor } from 'fast-average-color';
 
+/** Smooth camera movement to clicked planet */
 function FocusCamera({ target }) {
   const { camera } = useThree();
   useFrame(() => {
     if (target && target.current) {
-      const pos = target.current.position.clone().add(new THREE.Vector3(0, 0, 8));
-      camera.position.lerp(pos, 0.05);
+      const offset = target.current.position.clone().add(new THREE.Vector3(0, 0, 8));
+      camera.position.lerp(offset, 0.05);
       camera.lookAt(target.current.position);
     }
   });
   return null;
 }
 
+/** 
+ * BodyWithLogoMobile 
+ * - No local spin => always see decal 
+ * - Use fast-average-color to set planet color from logo 
+ */
 const BodyWithLogoMobile = forwardRef(function BodyWithLogoMobile(
   {
     name = 'Planet',
@@ -52,24 +56,23 @@ const BodyWithLogoMobile = forwardRef(function BodyWithLogoMobile(
 
   useImperativeHandle(ref, () => meshRef.current);
 
+  // Load decal + bump
   const [decalMap, bumpMap] = useTexture([decalUrl, bumpUrl]);
 
-  // use fast-average-color
+  // Extract planet color from decal
   useEffect(() => {
     if (!decalUrl) return;
     const img = new Image();
     img.crossOrigin = 'anonymous';
     img.src = decalUrl;
-
     img.onload = async () => {
       const fac = new FastAverageColor();
       const result = await fac.getColorAsync(img);
-      if (result && result.rgb) {
-        setColor(result.rgb);
-      }
+      if (result?.rgb) setColor(result.rgb);
     };
   }, [decalUrl]);
 
+  // Only revolve around center
   useFrame(({ clock }) => {
     if (meshRef.current && isVisible && !isSun) {
       const t = clock.getElapsedTime() * speed;
@@ -124,15 +127,18 @@ export default function SolarSystemMobile() {
   const [focusedRef, setFocusedRef] = useState(null);
   const [inspectedPlanet, setInspectedPlanet] = useState(null);
 
+  // Refs to each planet
   const sunRef = useRef(null);
   const planetOneRef = useRef(null);
   const planetTwoRef = useRef(null);
 
+  /** On planet click => set camera focus + mark that planet as inspected. */
   const handlePlanetClick = (ref, name) => {
     setFocusedRef(ref);
     setInspectedPlanet(name);
   };
 
+  /** Visible if no planet is inspected or if it matches the planet name. */
   const isVisible = (pName) => {
     if (!inspectedPlanet) return true;
     return inspectedPlanet === pName;
@@ -140,51 +146,28 @@ export default function SolarSystemMobile() {
 
   return (
     <>
-      <div style={styles.sidebar}>
-        <h3 style={styles.title}>Planets</h3>
-        {!inspectedPlanet ? (
-          <p style={styles.hint}>Tap a planet or pick from below:</p>
-        ) : (
-          <div style={styles.inspectBox}>
-            <p>{inspectedPlanet} Inspection</p>
-            <button
-              style={styles.btn}
-              onClick={() => {
-                setFocusedRef(null);
-                setInspectedPlanet(null);
-              }}
-            >
-              Close
-            </button>
-          </div>
-        )}
-
-        {!inspectedPlanet && (
-          <>
-            <button style={styles.btn} onClick={() => handlePlanetClick(sunRef, 'Sun')}>
-              Sun
-            </button>
-            <button
-              style={styles.btn}
-              onClick={() => handlePlanetClick(planetOneRef, 'Osmosis')}
-            >
-              Osmosis
-            </button>
-            <button
-              style={styles.btn}
-              onClick={() => handlePlanetClick(planetTwoRef, 'Celestia')}
-            >
-              Celestia
-            </button>
-          </>
-        )}
-      </div>
+      {/* If a planet is inspected, show a small floating box to close */}
+      {inspectedPlanet && (
+        <div style={styles.inspectBox}>
+          <p>{inspectedPlanet} Inspection</p>
+          <button
+            style={styles.button}
+            onClick={() => {
+              setFocusedRef(null);
+              setInspectedPlanet(null);
+            }}
+          >
+            Close
+          </button>
+        </div>
+      )}
 
       <Canvas
         style={{ width: '100vw', height: '100vh', touchAction: 'manipulation' }}
         camera={{ position: [0, 0, 22], fov: 50 }}
       >
         <Suspense fallback={null}>
+          {/* Basic Lights + Environment */}
           <fog attach="fog" args={['#000000', 10, 40]} />
           <ambientLight intensity={0.6} />
           <pointLight position={[0, 0, 0]} intensity={2} color="white" />
@@ -192,7 +175,7 @@ export default function SolarSystemMobile() {
           <Environment preset="dawn" />
           <Stars radius={100} depth={50} count={5000} factor={4} saturation={0} fade />
 
-          {/* Sun */}
+          {/* Bodies */}
           <BodyWithLogoMobile
             name="Sun"
             ref={sunRef}
@@ -206,7 +189,6 @@ export default function SolarSystemMobile() {
             onClick={handlePlanetClick}
           />
 
-          {/* Osmosis */}
           <BodyWithLogoMobile
             name="Osmosis"
             ref={planetOneRef}
@@ -219,7 +201,6 @@ export default function SolarSystemMobile() {
             onClick={handlePlanetClick}
           />
 
-          {/* Celestia */}
           <BodyWithLogoMobile
             name="Celestia"
             ref={planetTwoRef}
@@ -232,8 +213,10 @@ export default function SolarSystemMobile() {
             onClick={handlePlanetClick}
           />
 
+          {/* Smooth camera transitions */}
           <FocusCamera target={focusedRef} />
 
+          {/* User can still pinch or two-finger drag */}
           <OrbitControls
             enableZoom
             enablePan
@@ -243,6 +226,7 @@ export default function SolarSystemMobile() {
             maxDistance={30}
           />
 
+          {/* Bloom effect */}
           <EffectComposer>
             <Bloom intensity={1.2} luminanceThreshold={0.2} luminanceSmoothing={0.8} />
           </EffectComposer>
@@ -253,41 +237,20 @@ export default function SolarSystemMobile() {
 }
 
 const styles = {
-  sidebar: {
+  inspectBox: {
     position: 'absolute',
-    top: 0,
-    left: 0,
-    width: '180px',
-    height: '100vh',
-    background: 'rgba(0,0,0,0.7)',
-    color: '#fff',
+    top: 20,
+    left: 20,
     zIndex: 999,
     display: 'flex',
     flexDirection: 'column',
-    gap: '0.5rem',
-    padding: '0.8rem',
-    boxSizing: 'border-box'
-  },
-  title: {
-    margin: 0,
-    marginBottom: '0.5rem',
-    fontSize: '1.2rem',
-    fontWeight: 'bold'
-  },
-  hint: {
-    fontSize: '0.9rem',
-    margin: 0,
-    marginBottom: '0.5rem'
-  },
-  inspectBox: {
-    display: 'flex',
-    flexDirection: 'column',
     gap: '0.3rem',
-    background: 'rgba(255,255,255,0.1)',
-    padding: '8px 12px',
+    background: 'rgba(0,0,0,0.7)',
+    color: '#fff',
+    padding: '0.8rem 1rem',
     borderRadius: 6
   },
-  btn: {
+  button: {
     padding: '0.5rem',
     fontWeight: 'bold',
     borderRadius: 6,
