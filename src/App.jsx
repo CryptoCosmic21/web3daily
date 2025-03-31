@@ -1,22 +1,31 @@
-import React from 'react';
-import { Routes, Route } from 'react-router-dom';
-import Navbar from './components/Navbar';
-import MobileNav from './components/MobileNav';
-import HomePage from './pages/HomePage';
-import FeedPage from './pages/FeedPage';
-import AboutPage from './pages/AboutPage';
+import React, { useState } from "react";
+import { Routes, Route } from "react-router-dom";
+import LandingPage from "./components/LandingPage";
+import Navbar from "./components/Navbar";
+import HeroSection from "./components/HeroSection";
+import Web3DailyFeed from "./components/Web3DailyFeed";
+import XFeed from "./components/XFeed";
+import MobileNav from "./components/MobileNav";
 
 function App() {
+  const [showLanding, setShowLanding] = useState(true);
+
   return (
-    <div className="min-h-screen bg-black text-white">
-      <Navbar />
-      <Routes>
-        <Route path="/" element={<HomePage />} />
-        <Route path="/feed" element={<FeedPage />} />
-        <Route path="/about" element={<AboutPage />} />
-      </Routes>
-      <MobileNav />
-    </div>
+    <>
+      {showLanding && <LandingPage onEnter={() => setShowLanding(false)} />}
+      {!showLanding && (
+        <div className="min-h-screen bg-gray-900">
+          <Navbar />
+          <Routes>
+            <Route path="/" element={<HeroSection />} />
+            <Route path="/feed" element={<Web3DailyFeed />} />
+            <Route path="/about" element={<div className="p-4 text-white">About Page Coming Soon!</div>} />
+            <Route path="/xfeed" element={<XFeed />} />
+          </Routes>
+          <MobileNav />
+        </div>
+      )}
+    </>
   );
 }
 

@@ -1,4 +1,3 @@
-// src/components/ui/tabs.jsx
 import React, { useState } from "react";
 
 export function Tabs({ defaultValue, children }) {
@@ -13,7 +12,7 @@ export function Tabs({ defaultValue, children }) {
 
   return (
     <div className="w-full">
-      <div className="flex space-x-2 border-b border-gray-200 dark:border-gray-700">
+      <div className="flex space-x-2 border-b border-gray-700 dark:border-gray-600">
         {tabTriggers.map((trigger) =>
           React.cloneElement(trigger, {
             isActive: trigger.props.value === activeTab,
@@ -36,12 +35,11 @@ export function TabsTrigger({ value, children, isActive, onClick }) {
   return (
     <button
       onClick={onClick}
-      className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors duration-200
-        ${
-          isActive
-            ? "bg-gradient-to-r from-purple-500 to-indigo-500 text-white"
-            : "bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700"
-        }`}
+      className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors duration-200 focus:outline-none ${
+        isActive
+          ? "bg-gradient-to-r from-purple-500 to-indigo-500 text-white shadow-lg"
+          : "bg-gray-800 text-gray-300 hover:bg-gray-700"
+      }`}
     >
       {children}
     </button>

@@ -3,10 +3,10 @@ import axios from "axios";
 
 // Map tab labels to Strapi endpoints
 const endpoints = {
-  "X": "xes",
-  "TikTok": "tik-toks",
-  "YouTube": "youtubes",
-  "Reddit": "reddits",
+  X: "xes",
+  TikTok: "tik-toks",
+  YouTube: "youtubes",
+  Reddit: "reddits",
   "X Spaces": "x-spaces",
 };
 
@@ -41,7 +41,7 @@ export default function Web3DailyFeed() {
             onClick={() => setActiveTab(platform)}
             className={`px-4 py-2 rounded-full text-sm font-semibold transition-colors duration-300 ${
               activeTab === platform
-                ? "bg-indigo-600 text-white"
+                ? "bg-indigo-600 text-white shadow"
                 : "bg-gray-800 text-gray-300 hover:bg-gray-700"
             }`}
           >
@@ -50,7 +50,7 @@ export default function Web3DailyFeed() {
         ))}
       </div>
       {loading ? (
-        <p className="text-center text-gray-500">Loading...</p>
+        <p className="text-center text-gray-500">Loading posts...</p>
       ) : posts.length === 0 ? (
         <p className="text-center text-gray-500">
           No content available for {activeTab}.
@@ -62,7 +62,7 @@ export default function Web3DailyFeed() {
             return (
               <div
                 key={post.id}
-                className="bg-gray-900 rounded-xl p-4 shadow-lg border border-gray-700"
+                className="bg-gray-900 rounded-xl p-4 shadow-lg border border-gray-700 transform hover:scale-105 transition-transform duration-200"
               >
                 <h2 className="text-xl font-bold mb-1">
                   {attrs?.DisplayName || "Untitled"}
