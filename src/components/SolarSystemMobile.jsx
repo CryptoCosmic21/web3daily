@@ -19,13 +19,7 @@ import {
   Points,
   PointMaterial
 } from '@react-three/drei';
-import {
-  EffectComposer,
-  Bloom,
-  DepthOfField,
-  ChromaticAberration
-} from '@react-three/postprocessing';
-import { BlendFunction } from 'postprocessing';
+import { EffectComposer, Bloom } from '@react-three/postprocessing';
 import { Vector2 } from 'three';
 import * as THREE from 'three';
 import { FastAverageColor } from 'fast-average-color';
@@ -79,17 +73,17 @@ const OrbitingPlanetMobile = forwardRef(function OrbitingPlanetMobile(
 ) {
   const groupRef = useRef(null);
   useImperativeHandle(ref, () => groupRef.current);
-
+  
   const [baseColor, setBaseColor] = useState('#ffffff');
   const [hovered, setHovered] = useState(false);
   const [flash, setFlash] = useState(false);
   const flashTimeout = useRef(null);
-
+  
   const [decalMap, bumpMap] = useTexture([
     `/textures/${decalFile}`,
     `/textures/${bumpFile}`
   ]);
-
+  
   useEffect(() => {
     if (!decalFile) return;
     const img = new Image();
@@ -101,7 +95,7 @@ const OrbitingPlanetMobile = forwardRef(function OrbitingPlanetMobile(
       if (result?.rgb) setBaseColor(result.rgb);
     };
   }, [decalFile]);
-
+  
   useFrame(({ clock }) => {
     if (!groupRef.current || isSun) return;
     const t = clock.getElapsedTime();
@@ -112,7 +106,7 @@ const OrbitingPlanetMobile = forwardRef(function OrbitingPlanetMobile(
     const z = r * Math.sin(s * dir * t);
     groupRef.current.position.set(x, 0, z);
   });
-
+  
   useEffect(() => {
     if (flash) {
       if (flashTimeout.current) clearTimeout(flashTimeout.current);
@@ -122,11 +116,11 @@ const OrbitingPlanetMobile = forwardRef(function OrbitingPlanetMobile(
       if (flashTimeout.current) clearTimeout(flashTimeout.current);
     };
   }, [flash]);
-
+  
   useEffect(() => {
     groupRef.current.userData.handleCollision = () => setFlash(true);
   }, []);
-
+  
   return (
     <group
       ref={groupRef}
@@ -170,7 +164,7 @@ const OrbitingPlanetMobile = forwardRef(function OrbitingPlanetMobile(
   );
 });
 
-/** Mobile comet component with smoother motion */
+/** Mobile comet component with smooth motion */
 function CometMobile({ comet, onHit }) {
   const cometRef = useRef(null);
   useFrame((state, delta) => {
@@ -242,14 +236,27 @@ function SolarSystemMobileScene() {
         const sumSize = planetData[A].size + planetData[B].size;
         if (dist < sumSize) {
           if (planetData[A].size < planetData[B].size) {
-            reverseOrbit(A);
+            setPlanetData(prev => {
+              const copy = { ...prev[A] };
+              copy.directionFactor *= -1;
+              return { ...prev, [A]: copy };
+            });
             refA.userData.handleCollision?.();
           } else if (planetData[B].size < planetData[A].size) {
-            reverseOrbit(B);
+            setPlanetData(prev => {
+              const copy = { ...prev[B] };
+              copy.directionFactor *= -1;
+              return { ...prev, [B]: copy };
+            });
             refB.userData.handleCollision?.();
           } else {
-            reverseOrbit(A);
-            reverseOrbit(B);
+            setPlanetData(prev => {
+              const copyA = { ...prev[A] };
+              const copyB = { ...prev[B] };
+              copyA.directionFactor *= -1;
+              copyB.directionFactor *= -1;
+              return { ...prev, [A]: copyA, [B]: copyB };
+            });
             refA.userData.handleCollision?.();
             refB.userData.handleCollision?.();
           }
@@ -257,14 +264,6 @@ function SolarSystemMobileScene() {
       }
     }
   });
-  
-  function reverseOrbit(name) {
-    setPlanetData((prev) => {
-      const copy = { ...prev[name] };
-      copy.directionFactor *= -1;
-      return { ...prev, [name]: copy };
-    });
-  }
   
   function spawnRandomComet() {
     const keys = Object.keys(planetData);
@@ -361,7 +360,7 @@ export default function SolarSystemMobile() {
       >
         <Suspense fallback={null}>
           <fog attach="fog" args={['#000000', 50, 200]} />
-          <ambientLight intensity={0.6} />
+          <ambientLight intensity={0.8} />
           <pointLight position={[0, 0, 0]} intensity={2} color="#fff" />
           <Environment preset="dawn" />
           <Stars radius={200} depth={60} count={6000} factor={6} fade />
@@ -380,14 +379,7 @@ export default function SolarSystemMobile() {
           />
           
           <EffectComposer>
-            <Bloom intensity={0.8} luminanceThreshold={0.3} luminanceSmoothing={0.6} />
-            <DepthOfField focusDistance={0.005} focalLength={0.04} bokehScale={0.5} height={480} />
-            <ChromaticAberration
-              offset={new Vector2(0.0001, 0.0001)}
-              radialModulation={true}
-              modulationOffset={0.2}
-              blendFunction={BlendFunction.NORMAL}
-            />
+            <Bloom intensity={0.5} luminanceThreshold={0.35} luminanceSmoothing={0.7} />
           </EffectComposer>
         </Suspense>
       </Canvas>

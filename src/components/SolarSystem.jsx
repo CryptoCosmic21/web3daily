@@ -15,23 +15,15 @@ import {
   Decal,
   Environment,
   useTexture,
-  Trail,
-  Points,
-  PointMaterial
+  Trail
 } from '@react-three/drei';
-import {
-  EffectComposer,
-  Bloom,
-  DepthOfField,
-  ChromaticAberration
-} from '@react-three/postprocessing';
-import { BlendFunction } from 'postprocessing';
+import { EffectComposer, Bloom } from '@react-three/postprocessing';
 import { Vector2 } from 'three';
 import * as THREE from 'three';
 import { FastAverageColor } from 'fast-average-color';
 
 /**
- * Map planet names to texture filenames (as in your /public/textures folder).
+ * Map planet names to texture filenames.
  */
 const planetTextureMap = {
   Sun: "cosmos-atom-logo.png",
@@ -59,19 +51,6 @@ const initialPlanetData = {
   Akash: { radius: 95, speed: 0.24, size: 2.4, directionFactor: 1 }
 };
 
-/** Static asteroid field for cosmic ambience. */
-function AsteroidField({ count = 500, spread = 400 }) {
-  const positions = new Float32Array(count * 3);
-  for (let i = 0; i < count * 3; i++) {
-    positions[i] = (Math.random() - 0.5) * spread;
-  }
-  return (
-    <Points positions={positions} stride={3}>
-      <PointMaterial transparent color="#888" size={1.2} sizeAttenuation={true} depthWrite={false} />
-    </Points>
-  );
-}
-
 /** Renders a ring if a planet has one */
 function PlanetRing({ inner = 2.5, outer = 3.5 }) {
   return (
@@ -90,7 +69,7 @@ function PlanetRing({ inner = 2.5, outer = 3.5 }) {
 }
 
 /**
- * An orbiting planet component.
+ * OrbitingPlanet renders a planet that orbits the center.
  */
 const OrbitingPlanet = forwardRef(function OrbitingPlanet(
   { name, data, decalFile, bumpFile = "generic-bump.png", isSun = false, onClick },
@@ -194,14 +173,13 @@ const OrbitingPlanet = forwardRef(function OrbitingPlanet(
 });
 
 /**
- * A comet that travels smoothly from a random start to a planet's position.
+ * Comet component: moves smoothly from a random start to a planet's position.
  * Once it reaches its target, it is removed.
  */
 function Comet({ comet }) {
   const cometRef = useRef(null);
   useFrame((state, delta) => {
     if (!cometRef.current) return;
-    // Smooth progress update with delta time
     comet.progress = THREE.MathUtils.clamp(comet.progress + comet.speed * delta * 60, 0, 1);
     if (comet.progress >= 1) {
       comet.isDead = true;
@@ -236,7 +214,7 @@ function Comet({ comet }) {
   );
 }
 
-/** Main solar system scene */
+/** Main solar system scene (Desktop) */
 function SolarSystemScene() {
   const [planetData, setPlanetData] = useState(initialPlanetData);
   const planetRefs = useRef({});
@@ -271,14 +249,27 @@ function SolarSystemScene() {
         const sumSize = planetData[A].size + planetData[B].size;
         if (dist < sumSize) {
           if (planetData[A].size < planetData[B].size) {
-            reverseOrbit(A);
+            setPlanetData(prev => {
+              const copy = { ...prev[A] };
+              copy.directionFactor *= -1;
+              return { ...prev, [A]: copy };
+            });
             refA.userData.handleCollision?.();
           } else if (planetData[B].size < planetData[A].size) {
-            reverseOrbit(B);
+            setPlanetData(prev => {
+              const copy = { ...prev[B] };
+              copy.directionFactor *= -1;
+              return { ...prev, [B]: copy };
+            });
             refB.userData.handleCollision?.();
           } else {
-            reverseOrbit(A);
-            reverseOrbit(B);
+            setPlanetData(prev => {
+              const copyA = { ...prev[A] };
+              const copyB = { ...prev[B] };
+              copyA.directionFactor *= -1;
+              copyB.directionFactor *= -1;
+              return { ...prev, [A]: copyA, [B]: copyB };
+            });
             refA.userData.handleCollision?.();
             refB.userData.handleCollision?.();
           }
@@ -286,14 +277,6 @@ function SolarSystemScene() {
       }
     }
   });
-  
-  function reverseOrbit(name) {
-    setPlanetData((prev) => {
-      const copy = { ...prev[name] };
-      copy.directionFactor *= -1;
-      return { ...prev, [name]: copy };
-    });
-  }
   
   function spawnRandomComet() {
     const keys = Object.keys(planetData);
@@ -343,8 +326,6 @@ function SolarSystemScene() {
       {comets.map((c) => (
         <Comet key={c.id} comet={c} />
       ))}
-      
-      <AsteroidField count={800} spread={400} />
     </>
   );
 }
@@ -391,7 +372,7 @@ export default function SolarSystem() {
       >
         <Suspense fallback={null}>
           <fog attach="fog" args={['#000000', 50, 200]} />
-          <ambientLight intensity={0.6} />
+          <ambientLight intensity={0.8} />
           <pointLight position={[0, 0, 0]} intensity={2} color="#fff" />
           <Environment preset="dawn" />
           <Stars radius={200} depth={60} count={6000} factor={6} fade />
@@ -410,15 +391,7 @@ export default function SolarSystem() {
           />
           
           <EffectComposer>
-            <Bloom intensity={0.8} luminanceThreshold={0.3} luminanceSmoothing={0.6} />
-            {/* Remove or greatly reduce DOF for clarity */}
-            <DepthOfField focusDistance={0.005} focalLength={0.04} bokehScale={0.5} height={480} />
-            <ChromaticAberration
-              offset={new Vector2(0.0001, 0.0001)}
-              radialModulation={true}
-              modulationOffset={0.2}
-              blendFunction={BlendFunction.NORMAL}
-            />
+            <Bloom intensity={0.3} luminanceThreshold={0.3} luminanceSmoothing={0.7} />
           </EffectComposer>
         </Suspense>
       </Canvas>
