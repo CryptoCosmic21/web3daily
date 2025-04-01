@@ -8,7 +8,8 @@ export default function XFeed() {
   useEffect(() => {
     async function fetchPosts() {
       try {
-        const res = await axios.get("https://web3daily-cms.onrender.com/api/xes");
+        // Updated endpoint to your Railway URL
+        const res = await axios.get("https://web3daily-cms-production.up.railway.app/api/xes");
         // Expected response structure: { data: { data: [ { id, attributes: { ... } }, ... ] } }
         setPosts(res.data.data);
       } catch (err) {
