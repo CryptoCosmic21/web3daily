@@ -47,6 +47,8 @@ const fixedPlanetPositions = {
   Secret: new THREE.Vector3(radiusDesktop * Math.cos((3 * Math.PI) / 2), radiusDesktop * Math.sin((3 * Math.PI) / 2), 0),
   Akash: new THREE.Vector3(radiusDesktop * Math.cos((7 * Math.PI) / 4), radiusDesktop * Math.sin((7 * Math.PI) / 4), 0)
 };
+// Default overview camera position.
+const defaultCameraPos = new THREE.Vector3(0, 0, 150);
 // ---------------------------------------------------------------------
 
 /**
@@ -79,8 +81,8 @@ function FlowLine({ start, end, color = "#ffffff" }) {
 /**
  * FixedPlanet
  *
- * Renders a planet at a fixed position with a subtle pulsation.
- * When clicked, it enables inspection.
+ * Renders a planet at a fixed position with subtle pulsation.
+ * Clicking a planet triggers inspection mode.
  */
 const FixedPlanet = forwardRef(function FixedPlanet(
   { name, decalFile, bumpFile = "generic-bump.png", hasRing = false, onClick },
@@ -183,8 +185,9 @@ const FixedPlanet = forwardRef(function FixedPlanet(
 /**
  * SolarSystemScene
  *
- * Renders all planets at fixed geometric positions with "Atom" in the center.
- * It draws animated beams connecting every outer planet to Atom and connecting every pair of outer planets.
+ * Renders all planets at fixed geometric positions with Atom in the center.
+ * It draws animated beams connecting Atom to every outer planet,
+ * as well as beams connecting every pair of outer planets.
  */
 function SolarSystemScene({ onInspect }) {
   const planetOrder = [
@@ -244,40 +247,36 @@ function SolarSystemScene({ onInspect }) {
 /**
  * FocusCamera
  *
- * Smoothly moves the camera toward a target.
+ * When not inspecting, resets the camera to the default overview.
  */
-function FocusCamera({ target }) {
+function FocusCamera({ inspected }) {
   const { camera } = useThree();
-  useFrame(() => {
-    if (target?.current) {
-      const offsetPos = target.current.position.clone().add(new THREE.Vector3(0, 0, 50));
-      camera.position.lerp(offsetPos, 0.05);
-      camera.lookAt(target.current.position);
+  useEffect(() => {
+    if (!inspected) {
+      camera.position.set(...defaultCameraPos.toArray());
+      camera.lookAt(new THREE.Vector3(0, 0, 0));
     }
-  });
+  }, [inspected, camera]);
   return null;
 }
 
 /**
  * Main SolarSystem component.
- * Implements inspection mode:
- * - When a planet is clicked, FocusCamera moves the camera to that planet.
- * - OrbitControls are configured for free zoom/pan during inspection.
- * - When inspection is closed, OrbitControls are reset to the default view.
+ * - Clicking a planet triggers inspection mode: the FocusCamera moves the view to that planet,
+ *   and OrbitControls allow free zoom/pan.
+ * - When "Close Inspection" is clicked, the OrbitControls reset and the camera returns to the default overview.
  */
 export default function SolarSystem() {
   const [focusedRef, setFocusedRef] = useState(null);
   const [inspectedPlanet, setInspectedPlanet] = useState(null);
   const controlsRef = useRef();
-  const defaultCameraPos = new THREE.Vector3(0, 0, 150);
 
-  // Handler for when a planet is clicked for inspection.
   const handleInspect = (ref, name) => {
     setFocusedRef(ref);
     setInspectedPlanet(name);
   };
 
-  // When inspection is closed, reset the camera view.
+  // When inspection is closed, reset OrbitControls.
   useEffect(() => {
     if (!inspectedPlanet && controlsRef.current) {
       controlsRef.current.reset();
@@ -318,7 +317,7 @@ export default function SolarSystem() {
           
           <SolarSystemScene onInspect={handleInspect} />
           
-          <FocusCamera target={focusedRef} />
+          <FocusCamera inspected={inspectedPlanet} />
           
           <OrbitControls
             ref={controlsRef}

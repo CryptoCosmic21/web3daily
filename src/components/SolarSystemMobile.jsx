@@ -34,8 +34,8 @@ const planetTextureMapMobile = {
   Akash: "akash-network-akt-logo.png"
 };
 
-// Geometric positions for mobile – central "Atom" at (0,0,0) and outer planets arranged on a circle (radius 60).
-const radiusMobile = 60;
+// Geometric positions for mobile – central "Atom" at (0,0,0) and outer planets arranged on a circle (radius 40).
+const radiusMobile = 40;
 const fixedPlanetPositionsMobile = {
   Atom: new THREE.Vector3(0, 0, 0),
   Osmosis: new THREE.Vector3(radiusMobile * Math.cos(0), radiusMobile * Math.sin(0), 0),
@@ -52,10 +52,10 @@ const fixedPlanetPositionsMobile = {
 /**
  * FlowLineMobile
  *
- * Draws a straight dashed line between two fixed points on mobile.
+ * Draws a straight dashed line between two fixed points.
  * The dashOffset is animated to simulate a moving light pulse.
  */
-function FlowLineMobile({ start, end, color = "#ffffff", arcHeight = 30 }) {
+function FlowLineMobile({ start, end, color = "#ffffff" }) {
   const [dashOffset, setDashOffset] = useState(0);
   const points = [start, end];
   useFrame((_, delta) => {
@@ -65,7 +65,7 @@ function FlowLineMobile({ start, end, color = "#ffffff", arcHeight = 30 }) {
     <Line
       points={points}
       color={color}
-      lineWidth={2}
+      lineWidth={1}
       dashed
       dashSize={0.5}
       gapSize={0.3}
@@ -79,8 +79,8 @@ function FlowLineMobile({ start, end, color = "#ffffff", arcHeight = 30 }) {
 /**
  * FixedPlanetMobile
  *
- * Renders a planet at a fixed coordinate with subtle pulsation.
- * Tapping a planet enables inspection.
+ * Renders a planet at a fixed position with subtle pulsation.
+ * Tapping a planet triggers inspection mode.
  */
 const FixedPlanetMobile = forwardRef(function FixedPlanetMobile(
   { name, decalFile, bumpFile = "generic-bump.png", hasRing = false, onClick },
@@ -89,10 +89,7 @@ const FixedPlanetMobile = forwardRef(function FixedPlanetMobile(
   const groupRef = useRef(null);
   useImperativeHandle(ref, () => groupRef.current);
   const [baseColor, setBaseColor] = useState('#ffffff');
-  const [decalMap, bumpMap] = useTexture([
-    `/textures/${decalFile}`,
-    `/textures/${bumpFile}`
-  ]);
+  const [decalMap, bumpMap] = useTexture([`/textures/${decalFile}`, `/textures/${bumpFile}`]);
 
   useEffect(() => {
     if (!decalFile) return;
@@ -108,8 +105,7 @@ const FixedPlanetMobile = forwardRef(function FixedPlanetMobile(
 
   useEffect(() => {
     if (groupRef.current && fixedPlanetPositionsMobile[name]) {
-      const pos = fixedPlanetPositionsMobile[name];
-      groupRef.current.position.copy(pos);
+      groupRef.current.position.copy(fixedPlanetPositionsMobile[name]);
     }
   }, [name]);
 
@@ -181,8 +177,8 @@ const FixedPlanetMobile = forwardRef(function FixedPlanetMobile(
  * SolarSystemMobileScene
  *
  * Renders all planets for mobile with fixed positions.
- * It draws animated beams connecting the central "Atom" to each outer planet
- * and connects every pair of outer planets.
+ * Draws animated beams connecting the central "Atom" to each outer planet
+ * and connecting every pair of outer planets.
  */
 function SolarSystemMobileScene({ onInspect }) {
   const planetOrder = [
@@ -196,7 +192,6 @@ function SolarSystemMobileScene({ onInspect }) {
     "Secret",
     "Akash"
   ];
-  const planetRefs = useRef({});
 
   return (
     <>
@@ -207,10 +202,10 @@ function SolarSystemMobileScene({ onInspect }) {
           decalFile={planetTextureMapMobile[name]}
           bumpFile="generic-bump.png"
           hasRing={name === "THORChain"}
-          ref={(el) => { if (el) planetRefs.current[name] = el; }}
           onClick={(ref, name) => onInspect(ref, name)}
         />
       ))}
+      {/* Connect Atom to each outer planet */}
       {planetOrder
         .filter((n) => n !== "Atom")
         .map((n) => (
@@ -219,9 +214,9 @@ function SolarSystemMobileScene({ onInspect }) {
             start={fixedPlanetPositionsMobile["Atom"]}
             end={fixedPlanetPositionsMobile[n]}
             color="#ffffff"
-            arcHeight={30}
           />
         ))}
+      {/* Connect every pair of outer planets */}
       {planetOrder
         .filter((n) => n !== "Atom")
         .map((n, i, arr) =>
@@ -231,7 +226,6 @@ function SolarSystemMobileScene({ onInspect }) {
               start={fixedPlanetPositionsMobile[n]}
               end={fixedPlanetPositionsMobile[m]}
               color="#ffffff"
-              arcHeight={30}
             />
           ))
         )}
@@ -242,24 +236,24 @@ function SolarSystemMobileScene({ onInspect }) {
 /**
  * FocusCamera
  *
- * Smoothly moves the camera toward a target planet.
+ * If no planet is inspected, resets the camera to the default overview.
  */
-function FocusCamera({ target }) {
+function FocusCamera({ inspected }) {
   const { camera } = useThree();
-  useFrame(() => {
-    if (target?.current) {
-      const offsetPos = target.current.position.clone().add(new THREE.Vector3(0, 0, 50));
-      camera.position.lerp(offsetPos, 0.05);
-      camera.lookAt(target.current.position);
+  useEffect(() => {
+    if (!inspected) {
+      camera.position.set(0, 0, 120);
+      camera.lookAt(new THREE.Vector3(0, 0, 0));
     }
-  });
+  }, [inspected, camera]);
   return null;
 }
 
 /**
  * Main Mobile SolarSystem component.
- * Implements inspection mode: when a planet is tapped, camera focuses on it.
- * When closed, OrbitControls reset to default view.
+ * - Tapping a planet triggers inspection mode.
+ * - In inspection mode OrbitControls allow free zoom/pan.
+ * - Closing inspection resets the view to the default overview.
  */
 export function SolarSystemMobile() {
   const [focusedRef, setFocusedRef] = useState(null);
@@ -308,7 +302,7 @@ export function SolarSystemMobile() {
           
           <SolarSystemMobileScene onInspect={handleInspect} />
           
-          <FocusCamera target={focusedRef} />
+          <FocusCamera inspected={inspectedPlanet} />
           
           <OrbitControls
             ref={controlsRef}
@@ -316,8 +310,8 @@ export function SolarSystemMobile() {
             enablePan
             autoRotate={!inspectedPlanet}
             autoRotateSpeed={!inspectedPlanet ? 0.1 : 0}
-            minDistance={inspectedPlanet ? 10 : 50}
-            maxDistance={inspectedPlanet ? 500 : 150}
+            minDistance={inspectedPlanet ? 10 : 20}
+            maxDistance={inspectedPlanet ? 100 : 80}
           />
           
           <EffectComposer>
