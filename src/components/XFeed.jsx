@@ -8,9 +8,8 @@ export default function XFeed() {
   useEffect(() => {
     async function fetchPosts() {
       try {
-        // Fetch posts from Strapi's X collection.
         const res = await axios.get("https://web3daily-cms.onrender.com/api/xes");
-        // Expected structure: { data: { data: [ { id, attributes: { ... } }, ... ] } }
+        // Strapi v4 returns data in the format { data: { data: [...] } }
         setPosts(res.data.data);
       } catch (err) {
         console.error("Error fetching posts:", err);
@@ -33,7 +32,6 @@ export default function XFeed() {
     <div className="text-white p-4">
       <h2 className="text-xl font-bold mb-4">X Feed</h2>
       {posts.map((post) => {
-        // Destructure the attributes; adjust key names if needed.
         const {
           Username,
           DisplayName,
@@ -69,7 +67,7 @@ export default function XFeed() {
             <div className="mt-2 text-sm">
               <span>Likes: {Likes}</span> | <span>Retweets: {Retweets}</span>
             </div>
-            {/* Render additional fields like Avatar, Hashtag, and Mentions as needed */}
+            {/* You can also render Avatar, Hashtag, and Mentions if needed */}
           </div>
         );
       })}
