@@ -79,8 +79,8 @@ function FlowLineMobile({ start, end, color = "#ffffff" }) {
 /**
  * FixedPlanetMobile
  *
- * Renders a planet at a fixed position with subtle pulsation.
- * Tapping a planet triggers inspection mode.
+ * Renders a planet at a fixed coordinate with subtle pulsation.
+ * Tapping the planet triggers inspection mode.
  */
 const FixedPlanetMobile = forwardRef(function FixedPlanetMobile(
   { name, decalFile, bumpFile = "generic-bump.png", hasRing = false, onClick },
@@ -236,13 +236,13 @@ function SolarSystemMobileScene({ onInspect }) {
 /**
  * FocusCamera
  *
- * If no planet is inspected, resets the camera to the default overview.
+ * When no planet is inspected, resets the camera to the default overview.
  */
 function FocusCamera({ inspected }) {
   const { camera } = useThree();
   useEffect(() => {
     if (!inspected) {
-      camera.position.set(0, 0, 120);
+      camera.position.set(0, 0, 150);
       camera.lookAt(new THREE.Vector3(0, 0, 0));
     }
   }, [inspected, camera]);
@@ -252,20 +252,22 @@ function FocusCamera({ inspected }) {
 /**
  * Main Mobile SolarSystem component.
  * - Tapping a planet triggers inspection mode.
- * - In inspection mode OrbitControls allow free zoom/pan.
- * - Closing inspection resets the view to the default overview.
+ * - No overlay button is shown; inspection is toggled by clicking on a planet.
+ * - Tapping on the background (Canvas onPointerMissed) will clear inspection.
  */
 export function SolarSystemMobile() {
   const [focusedRef, setFocusedRef] = useState(null);
   const [inspectedPlanet, setInspectedPlanet] = useState(null);
   const controlsRef = useRef();
-  const defaultCameraPos = new THREE.Vector3(0, 0, 120);
+  // Increase default camera position so overview is less zoomed in.
+  const defaultCameraPos = new THREE.Vector3(0, 0, 150);
 
   const handleInspect = (ref, name) => {
     setFocusedRef(ref);
     setInspectedPlanet(name);
   };
 
+  // Reset OrbitControls when inspection is cleared.
   useEffect(() => {
     if (!inspectedPlanet && controlsRef.current) {
       controlsRef.current.reset();
@@ -274,24 +276,15 @@ export function SolarSystemMobile() {
 
   return (
     <>
-      <div style={styles.hud}>
-        {!inspectedPlanet ? (
-          <p style={styles.info}>Tap a planet to inspect</p>
-        ) : (
-          <div style={styles.inspectBox}>
-            <p>{inspectedPlanet} inspection</p>
-            <button style={styles.button} onClick={() => {
-              setFocusedRef(null);
-              setInspectedPlanet(null);
-            }}>
-              Close
-            </button>
-          </div>
-        )}
-      </div>
+      {/* No separate inspection overlay: inspection is toggled by tapping a planet.
+          Tapping on the background clears inspection. */}
       <Canvas
         style={{ width: '100vw', height: '100vh', touchAction: 'manipulation' }}
         camera={{ position: defaultCameraPos.toArray(), fov: 50 }}
+        onPointerMissed={() => {
+          setFocusedRef(null);
+          setInspectedPlanet(null);
+        }}
       >
         <Suspense fallback={null}>
           <fog attach="fog" args={['#000000', 100, 600]} />
@@ -311,7 +304,7 @@ export function SolarSystemMobile() {
             autoRotate={!inspectedPlanet}
             autoRotateSpeed={!inspectedPlanet ? 0.1 : 0}
             minDistance={inspectedPlanet ? 10 : 20}
-            maxDistance={inspectedPlanet ? 100 : 80}
+            maxDistance={inspectedPlanet ? 150 : 100}
           />
           
           <EffectComposer>
