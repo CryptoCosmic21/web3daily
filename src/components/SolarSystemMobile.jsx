@@ -246,14 +246,14 @@ function SolarSystemMobileScene({ onInspect }) {
 /**
  * FocusCamera
  *
- * If no planet is inspected, reset camera to [0,0,350] for a zoomed-out overview.
+ * If no planet is inspected, reset camera to [0,0,280] for a zoomed-out overview.
  */
 function FocusCamera({ inspected }) {
   const { camera } = useThree();
   useEffect(() => {
     if (!inspected) {
       // Move camera back to see entire cluster.
-      camera.position.set(0, 0, 350);
+      camera.position.set(0, 0, 280);
       camera.lookAt(new THREE.Vector3(0, 0, 0));
     }
   }, [inspected, camera]);
@@ -264,7 +264,7 @@ function FocusCamera({ inspected }) {
  * Main Mobile SolarSystem
  * - Tapping a planet => toggles inspection
  * - Tapping the background => clears inspection
- * - Radius is 25, camera is now at [0,0,350] for more zoom out
+ * - Radius is 25, camera is now at [0,0,280] for more zoom out
  */
 export function SolarSystemMobile() {
   const [focusedRef, setFocusedRef] = useState(null);
@@ -286,7 +286,7 @@ export function SolarSystemMobile() {
   return (
     <Canvas
       style={{ width: '100vw', height: '100vh', touchAction: 'manipulation' }}
-      camera={{ position: [0, 0, 350], fov: 50 }}
+      camera={{ position: [0, 0, 280], fov: 50 }}
       onPointerMissed={() => {
         setFocusedRef(null);
         setInspectedPlanet(null);
