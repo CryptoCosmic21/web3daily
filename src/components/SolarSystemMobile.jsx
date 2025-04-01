@@ -34,7 +34,8 @@ const planetTextureMapMobile = {
   Akash: "akash-network-akt-logo.png"
 };
 
-// Reduced radius for mobile from 40 to 25 so planets are closer to Atom.
+// Geometric positions for mobile – central "Atom" at (0,0,0) and outer planets arranged on a circle.
+// Reduced radius (25) to keep them closer to Atom.
 const radiusMobile = 25;
 const fixedPlanetPositionsMobile = {
   Atom: new THREE.Vector3(0, 0, 0),
@@ -47,7 +48,6 @@ const fixedPlanetPositionsMobile = {
   Secret: new THREE.Vector3(radiusMobile * Math.cos((3 * Math.PI) / 2), radiusMobile * Math.sin((3 * Math.PI) / 2), 0),
   Akash: new THREE.Vector3(radiusMobile * Math.cos((7 * Math.PI) / 4), radiusMobile * Math.sin((7 * Math.PI) / 4), 0)
 };
-
 // ---------------------------------------------------------------------
 
 /**
@@ -81,7 +81,7 @@ function FlowLineMobile({ start, end, color = "#ffffff" }) {
  * FixedPlanetMobile
  *
  * Renders a planet at a fixed coordinate with subtle pulsation.
- * Tapping a planet toggles inspection mode.
+ * Tapping a planet triggers inspection mode.
  */
 const FixedPlanetMobile = forwardRef(function FixedPlanetMobile(
   { name, decalFile, bumpFile = "generic-bump.png", hasRing = false, onClick },
@@ -110,7 +110,7 @@ const FixedPlanetMobile = forwardRef(function FixedPlanetMobile(
     }
   }, [name]);
 
-  // Subtle pulsation
+  // Subtle pulsation.
   useFrame(({ clock }) => {
     if (!groupRef.current) return;
     const t = clock.getElapsedTime();
@@ -173,13 +173,13 @@ const FixedPlanetMobile = forwardRef(function FixedPlanetMobile(
       )}
     </group>
   );
-});
+}
 
 /**
  * SolarSystemMobileScene
  *
- * Renders all planets with fixed positions near Atom.
- * Draws dashed beams connecting Atom to each outer planet
+ * Renders all planets for mobile with fixed positions.
+ * Draws animated beams connecting the central "Atom" to each outer planet
  * and connecting every pair of outer planets.
  */
 function SolarSystemMobileScene({ onInspect }) {
@@ -238,13 +238,13 @@ function SolarSystemMobileScene({ onInspect }) {
 /**
  * FocusCamera
  *
- * If no planet is inspected, resets the camera to the default overview.
+ * Resets the camera to the default overview if no planet is inspected.
  */
 function FocusCamera({ inspected }) {
   const { camera } = useThree();
   useEffect(() => {
     if (!inspected) {
-      camera.position.set(0, 0, 100); // Slightly closer than 150, but still a good overview.
+      camera.position.set(0, 0, 200); // Zoomed out view for mobile overview
       camera.lookAt(new THREE.Vector3(0, 0, 0));
     }
   }, [inspected, camera]);
@@ -252,22 +252,23 @@ function FocusCamera({ inspected }) {
 }
 
 /**
- * Main Mobile SolarSystem
+ * Main Mobile SolarSystem component.
  * - Tapping a planet toggles inspection mode.
- * - Tapping outside any planet resets to overview.
- * - The radius is now 25 for a tighter cluster around Atom.
+ * - Tapping on the background (Canvas onPointerMissed) clears inspection.
  */
 export function SolarSystemMobile() {
   const [focusedRef, setFocusedRef] = useState(null);
   const [inspectedPlanet, setInspectedPlanet] = useState(null);
   const controlsRef = useRef();
+  // Set default camera farther out to see the tighter cluster clearly.
+  const defaultCameraPos = new THREE.Vector3(0, 0, 200);
 
   const handleInspect = (ref, name) => {
     setFocusedRef(ref);
     setInspectedPlanet(name);
   };
 
-  // Reset controls if user closes inspection.
+  // Reset controls when inspection is cleared.
   useEffect(() => {
     if (!inspectedPlanet && controlsRef.current) {
       controlsRef.current.reset();
@@ -275,39 +276,73 @@ export function SolarSystemMobile() {
   }, [inspectedPlanet]);
 
   return (
-    <Canvas
-      style={{ width: '100vw', height: '100vh', touchAction: 'manipulation' }}
-      camera={{ position: [0, 0, 100], fov: 50 }}
-      onPointerMissed={() => {
-        setFocusedRef(null);
-        setInspectedPlanet(null);
-      }}
-    >
-      <Suspense fallback={null}>
-        <fog attach="fog" args={['#000000', 100, 600]} />
-        <ambientLight intensity={0.8} />
-        <pointLight position={[0, 0, 0]} intensity={2} color="#fff" />
-        <Environment preset="dawn" />
-        <Stars radius={200} depth={60} count={6000} factor={6} fade />
-
-        <SolarSystemMobileScene onInspect={handleInspect} />
-
-        <FocusCamera inspected={inspectedPlanet} />
-
-        <OrbitControls
-          ref={controlsRef}
-          enableZoom
-          enablePan
-          autoRotate={!inspectedPlanet}
-          autoRotateSpeed={!inspectedPlanet ? 0.1 : 0}
-          minDistance={inspectedPlanet ? 10 : 20}
-          maxDistance={inspectedPlanet ? 150 : 80}
-        />
-
-        <EffectComposer>
-          <Bloom intensity={0.3} luminanceThreshold={0.35} luminanceSmoothing={0.7} />
-        </EffectComposer>
-      </Suspense>
-    </Canvas>
+    <>
+      <Canvas
+        style={{ width: '100vw', height: '100vh', touchAction: 'manipulation' }}
+        camera={{ position: defaultCameraPos.toArray(), fov: 50 }}
+        onPointerMissed={() => {
+          setFocusedRef(null);
+          setInspectedPlanet(null);
+        }}
+      >
+        <Suspense fallback={null}>
+          <fog attach="fog" args={['#000000', 100, 600]} />
+          <ambientLight intensity={0.8} />
+          <pointLight position={[0, 0, 0]} intensity={2} color="#fff" />
+          <Environment preset="dawn" />
+          <Stars radius={200} depth={60} count={6000} factor={6} fade />
+          
+          <SolarSystemMobileScene onInspect={handleInspect} />
+          
+          <FocusCamera inspected={inspectedPlanet} />
+          
+          <OrbitControls
+            ref={controlsRef}
+            enableZoom
+            enablePan
+            autoRotate={!inspectedPlanet}
+            autoRotateSpeed={!inspectedPlanet ? 0.1 : 0}
+            minDistance={inspectedPlanet ? 10 : 30}
+            maxDistance={inspectedPlanet ? 150 : 200}
+          />
+          
+          <EffectComposer>
+            <Bloom intensity={0.3} luminanceThreshold={0.35} luminanceSmoothing={0.7} />
+          </EffectComposer>
+        </Suspense>
+      </Canvas>
+    </>
   );
 }
+
+const styles = {
+  hud: {
+    position: 'absolute',
+    top: 10,
+    left: 10,
+    color: '#fff',
+    zIndex: 999
+  },
+  info: {
+    background: 'rgba(0,0,0,0.5)',
+    padding: '8px 12px',
+    borderRadius: 6
+  },
+  inspectBox: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '0.5rem',
+    background: 'rgba(0,0,0,0.5)',
+    padding: '8px 12px',
+    borderRadius: 6
+  },
+  button: {
+    padding: '0.4rem 1rem',
+    border: '1px solid #666',
+    background: '#333',
+    color: '#fff',
+    fontWeight: 'bold',
+    borderRadius: 6,
+    cursor: 'pointer'
+  }
+};

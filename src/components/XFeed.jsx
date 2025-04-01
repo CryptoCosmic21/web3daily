@@ -9,7 +9,7 @@ export default function XFeed() {
     async function fetchPosts() {
       try {
         const res = await axios.get("https://web3daily-cms.onrender.com/api/xes");
-        // Strapi v4 returns data in the format { data: { data: [...] } }
+        // Expected response structure: { data: { data: [ { id, attributes: { ... } }, ... ] } }
         setPosts(res.data.data);
       } catch (err) {
         console.error("Error fetching posts:", err);
@@ -21,56 +21,44 @@ export default function XFeed() {
   }, []);
 
   if (loading) {
-    return <p className="text-white p-4">Loading posts...</p>;
+    return <p className="text-center text-gray-500">Loading posts...</p>;
   }
 
   if (!posts.length) {
-    return <p className="text-white p-4">No posts available.</p>;
+    return <p className="text-center text-gray-500">No posts available.</p>;
   }
 
   return (
-    <div className="text-white p-4">
+    <section className="p-4 max-w-5xl mx-auto">
       <h2 className="text-xl font-bold mb-4">X Feed</h2>
-      {posts.map((post) => {
-        const {
-          Username,
-          DisplayName,
-          Avatar,
-          TweetText,
-          DatePosted,
-          Likes,
-          Retweets,
-          Hashtag,
-          TweetURL,
-          Mentions
-        } = post.attributes;
-        return (
-          <div
-            key={post.id}
-            className="bg-gray-800 p-4 rounded mb-4 transform hover:scale-105 transition-transform duration-200"
-          >
-            <h3 className="font-bold">{DisplayName || "Unknown"}</h3>
-            <p>{TweetText || "No content available."}</p>
-            <p className="text-sm text-gray-400">
-              Posted on: {new Date(DatePosted).toLocaleString()}
-            </p>
-            {TweetURL && (
-              <a
-                href={TweetURL}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-blue-400 underline mt-2 inline-block"
-              >
-                View Original
-              </a>
-            )}
-            <div className="mt-2 text-sm">
-              <span>Likes: {Likes}</span> | <span>Retweets: {Retweets}</span>
+      <div className="grid gap-4">
+        {posts.map((post) => {
+          const attrs = post.attributes;
+          return (
+            <div
+              key={post.id}
+              className="bg-gray-900 rounded-xl p-4 shadow-lg border border-gray-700 transform hover:scale-105 transition-transform duration-200"
+            >
+              <h2 className="text-xl font-bold mb-1">
+                {attrs?.DisplayName || "Untitled"}
+              </h2>
+              <p className="text-gray-400 mb-2">
+                {attrs?.TweetText || attrs?.Description || "No content provided."}
+              </p>
+              {(attrs?.TweetURL || attrs?.VideoURL) && (
+                <a
+                  href={attrs?.TweetURL || attrs?.VideoURL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-400 hover:underline text-sm"
+                >
+                  View Original
+                </a>
+              )}
             </div>
-            {/* You can also render Avatar, Hashtag, and Mentions if needed */}
-          </div>
-        );
-      })}
-    </div>
+          );
+        })}
+      </div>
+    </section>
   );
 }
