@@ -9,7 +9,7 @@ import Web3DailyFeed from "./components/Web3DailyFeed";
 import XFeed from "./components/XFeed";
 import MobileNav from "./components/MobileNav";
 import SolarSystem from "./components/SolarSystem";
-import SolarSystemMobile from "./components/SolarSystemMobile";
+import { SolarSystemMobile } from "./components/SolarSystemMobile"; // Changed to named import
 
 function App() {
   const [showLanding, setShowLanding] = useState(true);

@@ -1,5 +1,4 @@
 // File: SolarSystem.jsx
-
 import React, {
   forwardRef,
   useRef,
@@ -15,18 +14,16 @@ import {
   Decal,
   Environment,
   useTexture,
-  Trail
+  Line
 } from '@react-three/drei';
 import { EffectComposer, Bloom } from '@react-three/postprocessing';
-import { Vector2 } from 'three';
 import * as THREE from 'three';
 import { FastAverageColor } from 'fast-average-color';
 
-/**
- * Map planet names to texture filenames.
- */
+// ---------------------------------------------------------------------
+// Texture mapping for planets – "Atom" is the central node.
 const planetTextureMap = {
-  Sun: "cosmos-atom-logo.png",
+  Atom: "cosmos-atom-logo.png",
   Osmosis: "osmosis-osmo-logo.png",
   Sei: "sei-sei-logo.png",
   Celestia: "celestia-tia-logo.png",
@@ -37,57 +34,66 @@ const planetTextureMap = {
   Akash: "akash-network-akt-logo.png"
 };
 
-/**
- * Basic orbit data for each planet.
- */
-const initialPlanetData = {
-  Osmosis: { radius: 25, speed: 0.25, size: 1.6, directionFactor: 1 },
-  Sei: { radius: 35, speed: 0.3, size: 1.3, directionFactor: 1 },
-  Celestia: { radius: 45, speed: 0.23, size: 2.4, directionFactor: 1 },
-  Mantra: { radius: 55, speed: 0.32, size: 2, directionFactor: 1 },
-  Injective: { radius: 65, speed: 0.21, size: 2, directionFactor: 1 },
-  THORChain: { radius: 75, speed: 0.28, size: 2.2, directionFactor: 1, hasRing: true },
-  Secret: { radius: 85, speed: 0.26, size: 1.8, directionFactor: 1 },
-  Akash: { radius: 95, speed: 0.24, size: 2.4, directionFactor: 1 }
+// Geometric positions – central "Atom" at (0,0,0) and outer planets evenly arranged on a circle (radius 80).
+const radiusDesktop = 80;
+const fixedPlanetPositions = {
+  Atom: new THREE.Vector3(0, 0, 0),
+  Osmosis: new THREE.Vector3(radiusDesktop * Math.cos(0), radiusDesktop * Math.sin(0), 0),
+  Sei: new THREE.Vector3(radiusDesktop * Math.cos(Math.PI / 4), radiusDesktop * Math.sin(Math.PI / 4), 0),
+  Celestia: new THREE.Vector3(radiusDesktop * Math.cos(Math.PI / 2), radiusDesktop * Math.sin(Math.PI / 2), 0),
+  Mantra: new THREE.Vector3(radiusDesktop * Math.cos((3 * Math.PI) / 4), radiusDesktop * Math.sin((3 * Math.PI) / 4), 0),
+  Injective: new THREE.Vector3(radiusDesktop * Math.cos(Math.PI), radiusDesktop * Math.sin(Math.PI), 0),
+  THORChain: new THREE.Vector3(radiusDesktop * Math.cos((5 * Math.PI) / 4), radiusDesktop * Math.sin((5 * Math.PI) / 4), 0),
+  Secret: new THREE.Vector3(radiusDesktop * Math.cos((3 * Math.PI) / 2), radiusDesktop * Math.sin((3 * Math.PI) / 2), 0),
+  Akash: new THREE.Vector3(radiusDesktop * Math.cos((7 * Math.PI) / 4), radiusDesktop * Math.sin((7 * Math.PI) / 4), 0)
 };
+// ---------------------------------------------------------------------
 
-/** Renders a ring if a planet has one */
-function PlanetRing({ inner = 2.5, outer = 3.5 }) {
+/**
+ * FlowLine
+ *
+ * Draws a straight dashed line between two fixed points.
+ * The dashOffset is animated to simulate a moving light pulse.
+ */
+function FlowLine({ start, end, color = "#ffffff" }) {
+  const [dashOffset, setDashOffset] = useState(0);
+  const points = [start, end];
+  useFrame((_, delta) => {
+    setDashOffset(prev => prev - delta * 3);
+  });
   return (
-    <mesh rotation={[-Math.PI / 2, 0, 0]}>
-      <ringGeometry args={[inner, outer, 64]} />
-      <meshStandardMaterial
-        color="#ccc"
-        side={THREE.DoubleSide}
-        emissive="#555"
-        emissiveIntensity={0.2}
-        transparent
-        opacity={0.6}
-      />
-    </mesh>
+    <Line
+      points={points}
+      color={color}
+      lineWidth={2}
+      dashed
+      dashSize={0.5}
+      gapSize={0.3}
+      dashOffset={dashOffset}
+      opacity={1}
+      transparent
+    />
   );
 }
 
 /**
- * OrbitingPlanet renders a planet that orbits the center.
+ * FixedPlanet
+ *
+ * Renders a planet at a fixed position with a subtle pulsation.
+ * When clicked, it enables inspection.
  */
-const OrbitingPlanet = forwardRef(function OrbitingPlanet(
-  { name, data, decalFile, bumpFile = "generic-bump.png", isSun = false, onClick },
+const FixedPlanet = forwardRef(function FixedPlanet(
+  { name, decalFile, bumpFile = "generic-bump.png", hasRing = false, onClick },
   ref
 ) {
   const groupRef = useRef(null);
   useImperativeHandle(ref, () => groupRef.current);
-  
-  const [hovered, setHovered] = useState(false);
   const [baseColor, setBaseColor] = useState('#ffffff');
-  const [flash, setFlash] = useState(false);
-  const flashTimeout = useRef(null);
-  
   const [decalMap, bumpMap] = useTexture([
     `/textures/${decalFile}`,
     `/textures/${bumpFile}`
   ]);
-  
+
   useEffect(() => {
     if (!decalFile) return;
     const img = new Image();
@@ -99,43 +105,33 @@ const OrbitingPlanet = forwardRef(function OrbitingPlanet(
       if (result?.rgb) setBaseColor(result.rgb);
     };
   }, [decalFile]);
-  
-  useFrame(({ clock }) => {
-    if (!groupRef.current || isSun) return;
-    const t = clock.getElapsedTime();
-    const dir = data.directionFactor;
-    const r = data.radius;
-    const s = data.speed;
-    const x = r * Math.cos(s * dir * t);
-    const z = r * Math.sin(s * dir * t);
-    groupRef.current.position.set(x, 0, z);
-  });
-  
+
+  // Set the fixed position.
   useEffect(() => {
-    if (flash) {
-      if (flashTimeout.current) clearTimeout(flashTimeout.current);
-      flashTimeout.current = setTimeout(() => setFlash(false), 300);
+    if (groupRef.current && fixedPlanetPositions[name]) {
+      const pos = fixedPlanetPositions[name];
+      groupRef.current.position.copy(pos);
+      console.log(`Planet ${name} at ${pos.toArray()}`);
     }
-    return () => {
-      if (flashTimeout.current) clearTimeout(flashTimeout.current);
-    };
-  }, [flash]);
-  
-  useEffect(() => {
-    groupRef.current.userData.handleCollision = () => setFlash(true);
-  }, []);
-  
+  }, [name]);
+
+  // Subtle pulsation.
+  useFrame(({ clock }) => {
+    if (!groupRef.current) return;
+    const t = clock.getElapsedTime();
+    const pulsate = 1 + 0.05 * Math.sin(t * 3);
+    groupRef.current.scale.set(pulsate, pulsate, pulsate);
+  });
+
   return (
     <group
       ref={groupRef}
       onPointerOver={(e) => {
         e.stopPropagation();
-        setHovered(true);
         document.body.style.cursor = 'pointer';
       }}
       onPointerOut={(e) => {
         e.stopPropagation();
-        setHovered(false);
         document.body.style.cursor = 'auto';
       }}
       onClick={(e) => {
@@ -144,198 +140,117 @@ const OrbitingPlanet = forwardRef(function OrbitingPlanet(
       }}
     >
       <mesh>
-        <sphereGeometry args={[data.size, 64, 64]} />
+        <sphereGeometry args={[5, 64, 64]} />
         <meshStandardMaterial
-          color={flash ? '#ff4444' : baseColor}
-          emissive={hovered ? baseColor : '#000'}
-          emissiveIntensity={hovered ? 0.3 : 0.05}
+          color={baseColor}
+          emissive={baseColor}
+          emissiveIntensity={0.3}
           roughness={0.3}
           metalness={0.4}
           bumpMap={bumpMap}
           bumpScale={0.15}
         />
         <Decal
-          position={[0, 0, data.size * 1.02]}
-          scale={data.size * 1.2}
+          position={[0, 0, 5 * 1.02]}
+          scale={5 * 1.2}
           map={decalMap}
           rotation={[0, 0, 0]}
           transparent
-          opacity={flash ? 0.4 : 0.7}
+          opacity={0.7}
           polygonOffset
           polygonOffsetFactor={-10}
           depthTest
           depthWrite
         />
       </mesh>
-      {data.hasRing && <PlanetRing inner={data.size * 1.5} outer={data.size * 2.2} />}
+      {hasRing && (
+        <mesh rotation={[-Math.PI / 2, 0, 0]}>
+          <ringGeometry args={[5 * 1.5, 5 * 2.2, 64]} />
+          <meshStandardMaterial
+            color="#ccc"
+            side={THREE.DoubleSide}
+            emissive="#555"
+            emissiveIntensity={0.2}
+            transparent
+            opacity={0.6}
+          />
+        </mesh>
+      )}
     </group>
   );
 });
 
 /**
- * Comet component: moves smoothly from a random start to a planet's position.
- * Once it reaches its target, it is removed.
+ * SolarSystemScene
+ *
+ * Renders all planets at fixed geometric positions with "Atom" in the center.
+ * It draws animated beams connecting every outer planet to Atom and connecting every pair of outer planets.
  */
-function Comet({ comet }) {
-  const cometRef = useRef(null);
-  useFrame((state, delta) => {
-    if (!cometRef.current) return;
-    comet.progress = THREE.MathUtils.clamp(comet.progress + comet.speed * delta * 60, 0, 1);
-    if (comet.progress >= 1) {
-      comet.isDead = true;
-    } else {
-      const targetPos = new THREE.Vector3().copy(comet.start).lerp(comet.target, comet.progress);
-      cometRef.current.position.lerp(targetPos, 0.1);
-    }
-  });
-  if (comet.isDead) return null;
-  return (
-    <group ref={cometRef}>
-      <mesh>
-        <sphereGeometry args={[0.8, 16, 16]} />
-        <meshStandardMaterial
-          color="#fff"
-          emissive="#fff"
-          emissiveIntensity={1}
-          roughness={0.1}
-        />
-      </mesh>
-      <Trail
-        width={1.5}
-        length={3}
-        color="#fff"
-        segments={15}
-        decay={2}
-        blending={THREE.AdditiveBlending}
-        target={cometRef}
-        attenuation={(width) => width}
-      />
-    </group>
-  );
-}
-
-/** Main solar system scene (Desktop) */
-function SolarSystemScene() {
-  const [planetData, setPlanetData] = useState(initialPlanetData);
+function SolarSystemScene({ onInspect }) {
+  const planetOrder = [
+    "Atom",
+    "Osmosis",
+    "Sei",
+    "Celestia",
+    "Mantra",
+    "Injective",
+    "THORChain",
+    "Secret",
+    "Akash"
+  ];
   const planetRefs = useRef({});
-  const [comets, setComets] = useState([]);
-  
-  // Spawn a comet every 15 seconds.
-  useEffect(() => {
-    const int = setInterval(() => spawnRandomComet(), 15000);
-    return () => clearInterval(int);
-  }, []);
-  
-  // Remove dead comets every 500ms.
-  useEffect(() => {
-    const int = setInterval(() => {
-      setComets((prev) => prev.filter((c) => !c.isDead));
-    }, 500);
-    return () => clearInterval(int);
-  }, []);
-  
-  useFrame(() => {
-    const names = Object.keys(planetData);
-    for (let i = 0; i < names.length; i++) {
-      for (let j = i + 1; j < names.length; j++) {
-        const A = names[i];
-        const B = names[j];
-        const refA = planetRefs.current[A];
-        const refB = planetRefs.current[B];
-        if (!refA || !refB) continue;
-        const posA = refA.position;
-        const posB = refB.position;
-        const dist = posA.distanceTo(posB);
-        const sumSize = planetData[A].size + planetData[B].size;
-        if (dist < sumSize) {
-          if (planetData[A].size < planetData[B].size) {
-            setPlanetData(prev => {
-              const copy = { ...prev[A] };
-              copy.directionFactor *= -1;
-              return { ...prev, [A]: copy };
-            });
-            refA.userData.handleCollision?.();
-          } else if (planetData[B].size < planetData[A].size) {
-            setPlanetData(prev => {
-              const copy = { ...prev[B] };
-              copy.directionFactor *= -1;
-              return { ...prev, [B]: copy };
-            });
-            refB.userData.handleCollision?.();
-          } else {
-            setPlanetData(prev => {
-              const copyA = { ...prev[A] };
-              const copyB = { ...prev[B] };
-              copyA.directionFactor *= -1;
-              copyB.directionFactor *= -1;
-              return { ...prev, [A]: copyA, [B]: copyB };
-            });
-            refA.userData.handleCollision?.();
-            refB.userData.handleCollision?.();
-          }
-        }
-      }
-    }
-  });
-  
-  function spawnRandomComet() {
-    const keys = Object.keys(planetData);
-    const pick = keys[Math.floor(Math.random() * keys.length)];
-    const planetRef = planetRefs.current[pick];
-    if (!planetRef) return;
-    const planetPos = planetRef.position.clone();
-    const startPos = new THREE.Vector3(
-      (Math.random() - 0.5) * 300,
-      (Math.random() - 0.5) * 50,
-      (Math.random() - 0.5) * 300
-    );
-    const cometObj = {
-      id: Math.random(),
-      start: startPos,
-      target: planetPos,
-      progress: 0,
-      speed: 0.002 + Math.random() * 0.003,
-      isDead: false
-    };
-    setComets((prev) => [...prev, cometObj]);
-  }
-  
+
   return (
     <>
-      {/* Sun */}
-      <OrbitingPlanet
-        name="Sun"
-        isSun
-        data={{ isSun: true, radius: 0, speed: 0, size: 6, directionFactor: 1 }}
-        decalFile={planetTextureMap["Sun"]}
-        bumpFile="generic-bump.png"
-        ref={(el) => { if (el) planetRefs.current["Sun"] = el; }}
-      />
-      
-      {Object.entries(planetData).map(([pName, pDat]) => (
-        <OrbitingPlanet
-          key={pName}
-          name={pName}
-          data={pDat}
-          decalFile={planetTextureMap[pName]}
+      {planetOrder.map((name) => (
+        <FixedPlanet
+          key={name}
+          name={name}
+          decalFile={planetTextureMap[name]}
           bumpFile="generic-bump.png"
-          ref={(el) => { if (el) planetRefs.current[pName] = el; }}
+          hasRing={name === "THORChain"}
+          ref={(el) => { if (el) planetRefs.current[name] = el; }}
+          onClick={(ref, name) => onInspect(ref, name)}
         />
       ))}
-      
-      {comets.map((c) => (
-        <Comet key={c.id} comet={c} />
-      ))}
+      {/* Beams from Atom to each outer planet */}
+      {planetOrder
+        .filter((n) => n !== "Atom")
+        .map((n) => (
+          <FlowLine
+            key={`atom-${n}`}
+            start={fixedPlanetPositions["Atom"]}
+            end={fixedPlanetPositions[n]}
+            color="#ffffff"
+          />
+        ))}
+      {/* Beams connecting every pair of outer planets */}
+      {planetOrder
+        .filter((n) => n !== "Atom")
+        .map((n, i, arr) =>
+          arr.slice(i + 1).map((m) => (
+            <FlowLine
+              key={`${n}-${m}`}
+              start={fixedPlanetPositions[n]}
+              end={fixedPlanetPositions[m]}
+              color="#ffffff"
+            />
+          ))
+        )}
     </>
   );
 }
 
-/** Smooth camera movement */
+/**
+ * FocusCamera
+ *
+ * Smoothly moves the camera toward a target.
+ */
 function FocusCamera({ target }) {
   const { camera } = useThree();
   useFrame(() => {
     if (target?.current) {
-      const offsetPos = target.current.position.clone().add(new THREE.Vector3(0, 0, 8));
+      const offsetPos = target.current.position.clone().add(new THREE.Vector3(0, 0, 50));
       camera.position.lerp(offsetPos, 0.05);
       camera.lookAt(target.current.position);
     }
@@ -343,10 +258,32 @@ function FocusCamera({ target }) {
   return null;
 }
 
+/**
+ * Main SolarSystem component.
+ * Implements inspection mode:
+ * - When a planet is clicked, FocusCamera moves the camera to that planet.
+ * - OrbitControls are configured for free zoom/pan during inspection.
+ * - When inspection is closed, OrbitControls are reset to the default view.
+ */
 export default function SolarSystem() {
   const [focusedRef, setFocusedRef] = useState(null);
   const [inspectedPlanet, setInspectedPlanet] = useState(null);
-  
+  const controlsRef = useRef();
+  const defaultCameraPos = new THREE.Vector3(0, 0, 150);
+
+  // Handler for when a planet is clicked for inspection.
+  const handleInspect = (ref, name) => {
+    setFocusedRef(ref);
+    setInspectedPlanet(name);
+  };
+
+  // When inspection is closed, reset the camera view.
+  useEffect(() => {
+    if (!inspectedPlanet && controlsRef.current) {
+      controlsRef.current.reset();
+    }
+  }, [inspectedPlanet]);
+
   return (
     <>
       <div style={styles.hud}>
@@ -355,43 +292,46 @@ export default function SolarSystem() {
         ) : (
           <div style={styles.inspectBox}>
             <p>{inspectedPlanet} inspection</p>
-            <button style={styles.button} onClick={() => {
-              setFocusedRef(null);
-              setInspectedPlanet(null);
-            }}>
+            <button
+              style={styles.button}
+              onClick={() => {
+                setFocusedRef(null);
+                setInspectedPlanet(null);
+              }}
+            >
               Close Inspection
             </button>
           </div>
         )}
       </div>
-      
       <Canvas
         shadows
         style={{ width: '100%', height: '100vh' }}
-        camera={{ position: [0, 0, 130], fov: 50 }}
+        camera={{ position: defaultCameraPos.toArray(), fov: 50 }}
       >
         <Suspense fallback={null}>
-          <fog attach="fog" args={['#000000', 50, 200]} />
+          <fog attach="fog" args={['#000000', 100, 600]} />
           <ambientLight intensity={0.8} />
           <pointLight position={[0, 0, 0]} intensity={2} color="#fff" />
           <Environment preset="dawn" />
           <Stars radius={200} depth={60} count={6000} factor={6} fade />
           
-          <SolarSystemScene />
+          <SolarSystemScene onInspect={handleInspect} />
           
           <FocusCamera target={focusedRef} />
           
           <OrbitControls
+            ref={controlsRef}
             enableZoom
             enablePan
-            autoRotate
-            autoRotateSpeed={0.2}
-            minDistance={10}
-            maxDistance={130}
+            autoRotate={!inspectedPlanet}
+            autoRotateSpeed={!inspectedPlanet ? 0.1 : 0}
+            minDistance={inspectedPlanet ? 10 : 50}
+            maxDistance={inspectedPlanet ? 500 : 200}
           />
           
           <EffectComposer>
-            <Bloom intensity={0.3} luminanceThreshold={0.3} luminanceSmoothing={0.7} />
+            <Bloom intensity={0.3} luminanceThreshold={0.35} luminanceSmoothing={0.7} />
           </EffectComposer>
         </Suspense>
       </Canvas>
@@ -421,9 +361,9 @@ const styles = {
     borderRadius: 6
   },
   button: {
-    padding: '0.4rem 1rem',
+    padding: '0.5rem 1rem',
     border: '1px solid #666',
-    background: '#333',
+    background: '#444',
     color: '#fff',
     fontWeight: 'bold',
     borderRadius: 6,
