@@ -35,7 +35,7 @@ const planetTextureMapMobile = {
 };
 
 // Geometric positions for mobile – central "Atom" at (0,0,0) and outer planets arranged on a circle (radius 40).
-const radiusMobile = 40;
+const radiusMobile = 20;
 const fixedPlanetPositionsMobile = {
   Atom: new THREE.Vector3(0, 0, 0),
   Osmosis: new THREE.Vector3(radiusMobile * Math.cos(0), radiusMobile * Math.sin(0), 0),
@@ -260,7 +260,7 @@ export function SolarSystemMobile() {
   const [inspectedPlanet, setInspectedPlanet] = useState(null);
   const controlsRef = useRef();
   // Increase default camera position so overview is less zoomed in.
-  const defaultCameraPos = new THREE.Vector3(0, 0, 150);
+  const defaultCameraPos = new THREE.Vector3(0, 0, 200);
 
   const handleInspect = (ref, name) => {
     setFocusedRef(ref);
