@@ -9,8 +9,8 @@ export default function XFeed() {
     async function fetchPosts() {
       try {
         const res = await axios.get("https://web3daily-cms-production.up.railway.app/api/xes");
-        console.log("API response:", res.data); // Debug: log entire response
-        // Expected response structure: { data: { data: [ { id, attributes: { ... } }, ... ] } }
+        console.log("API response:", res.data);
+        // Expected response structure: { data: [ { id, attributes: { ... } }, ... ], meta: { ... } }
         setPosts(res.data.data);
       } catch (err) {
         console.error("Error fetching posts:", err.response ? err.response.data : err.message);
@@ -36,7 +36,7 @@ export default function XFeed() {
         {posts.map((post) => {
           if (!post.attributes) {
             console.warn(`Post with ID ${post.id} has no attributes`, post);
-            return null;
+            return null; // Skip posts without attributes
           }
           const { DisplayName, TweetText, TweetURL, DatePosted } = post.attributes;
           return (
