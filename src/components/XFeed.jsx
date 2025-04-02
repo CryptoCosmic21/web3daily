@@ -8,11 +8,8 @@ export default function XFeed() {
   useEffect(() => {
     async function fetchPosts() {
       try {
-        const res = await axios.get(
-          "https://web3daily-cms-production.up.railway.app/api/xes"
-        );
+        const res = await axios.get("https://web3daily-cms-production.up.railway.app/api/xes");
         console.log("API response:", res.data);
-        // Ensure res.data.data is an array
         const dataArray = Array.isArray(res.data.data) ? res.data.data : [];
         setPosts(dataArray);
       } catch (err) {
@@ -40,29 +37,18 @@ export default function XFeed() {
       <h2 className="text-xl font-bold mb-4">X Feed</h2>
       <div className="grid gap-4">
         {posts.map((post) => {
-          let displayName, tweetText, tweetUrl, datePosted;
-          if (post.attributes) {
-            displayName = post.attributes.DisplayName;
-            tweetText = post.attributes.TweetText;
-            tweetUrl = post.attributes.TweetURL;
-            datePosted = post.attributes.DatePosted;
-          } else {
-            displayName = post.DisplayName;
-            tweetText = post.TweetText;
-            tweetUrl = post.TweetURL;
-            datePosted = post.DatePosted;
-          }
-
+          // Now destructure directly from the post object
+          const { DisplayName, TweetText, TweetURL, DatePosted } = post;
           return (
             <div
               key={post.id}
               className="bg-gray-900 rounded-xl p-4 shadow-lg border border-gray-700 transform hover:scale-105 transition-transform duration-200"
             >
-              <h2 className="text-xl font-bold mb-1">{displayName || "Untitled"}</h2>
-              <p className="text-gray-400 mb-2">{tweetText || "No content provided."}</p>
-              {tweetUrl && (
+              <h2 className="text-xl font-bold mb-1">{DisplayName || "Untitled"}</h2>
+              <p className="text-gray-400 mb-2">{TweetText || "No content provided."}</p>
+              {TweetURL && (
                 <a
-                  href={tweetUrl}
+                  href={TweetURL}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-blue-400 hover:underline text-sm"
@@ -70,9 +56,9 @@ export default function XFeed() {
                   View Original
                 </a>
               )}
-              {datePosted && (
+              {DatePosted && (
                 <p className="text-sm text-gray-400 mt-2">
-                  Posted on: {new Date(datePosted).toLocaleString()}
+                  Posted on: {new Date(DatePosted).toLocaleString()}
                 </p>
               )}
             </div>

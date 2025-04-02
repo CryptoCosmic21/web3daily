@@ -7,7 +7,7 @@ const endpoints = {
   TikTok: "tik-toks",
   YouTube: "youtubes",
   Reddit: "reddits",
-  "X Spaces": "x-spaces"
+  "X Spaces": "x-spaces",
 };
 
 export default function Web3DailyFeed() {
@@ -23,9 +23,13 @@ export default function Web3DailyFeed() {
           `https://web3daily-cms-production.up.railway.app/api/${endpoints[activeTab]}`
         );
         console.log("API response:", res.data);
-        setPosts(res.data.data);
+        const dataArray = Array.isArray(res.data.data) ? res.data.data : [];
+        setPosts(dataArray);
       } catch (err) {
-        console.error("Error fetching posts:", err.response ? err.response.data : err.message);
+        console.error(
+          "Error fetching posts:",
+          err.response ? err.response.data : err.message
+        );
       } finally {
         setLoading(false);
       }
@@ -59,7 +63,8 @@ export default function Web3DailyFeed() {
       ) : (
         <div className="grid gap-4">
           {posts.map((post) => {
-            const { DisplayName, TweetText, TweetURL, DatePosted } = post.attributes;
+            // Destructure fields directly from the post object
+            const { DisplayName, TweetText, TweetURL, DatePosted } = post;
             return (
               <div
                 key={post.id}
@@ -71,7 +76,7 @@ export default function Web3DailyFeed() {
                 <p className="text-gray-400 mb-2">
                   {TweetText || "No content provided."}
                 </p>
-                {(TweetURL) && (
+                {TweetURL && (
                   <a
                     href={TweetURL}
                     target="_blank"
