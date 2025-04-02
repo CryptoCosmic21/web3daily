@@ -34,15 +34,11 @@ export default function XFeed() {
       <h2 className="text-xl font-bold mb-4">X Feed</h2>
       <div className="grid gap-4">
         {posts.map((post) => {
-          // Log post for debugging
-          console.log("Rendering post:", post);
-          // If attributes exist, use them; otherwise use post directly.
-          const data = post && post.attributes ? post.attributes : post;
-          // Use safe property access without destructuring.
-          const DisplayName = data && data.DisplayName ? data.DisplayName : "Untitled";
-          const TweetText = data && data.TweetText ? data.TweetText : "No content provided.";
-          const TweetURL = data && data.TweetURL ? data.TweetURL : "";
-          const DatePosted = data && data.DatePosted ? data.DatePosted : null;
+          // Use optional chaining to safely access fields:
+          const DisplayName = post?.attributes?.DisplayName || post?.DisplayName || "Untitled";
+          const TweetText = post?.attributes?.TweetText || post?.TweetText || "No content provided.";
+          const TweetURL = post?.attributes?.TweetURL || post?.TweetURL || "";
+          const DatePosted = post?.attributes?.DatePosted || post?.DatePosted || null;
 
           return (
             <div
