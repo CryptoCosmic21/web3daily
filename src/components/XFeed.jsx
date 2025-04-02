@@ -10,12 +10,7 @@ export default function XFeed() {
       try {
         const res = await axios.get("https://web3daily-cms-production.up.railway.app/api/xes");
         console.log("API response:", res.data);
-        // Filter out any posts that don't have attributes
-        const validPosts = res.data.data.filter(post => post.attributes);
-        if (validPosts.length !== res.data.data.length) {
-          console.warn("Some posts are missing attributes and will be skipped.", res.data.data);
-        }
-        setPosts(validPosts);
+        setPosts(res.data.data);
       } catch (err) {
         console.error("Error fetching posts:", err.response ? err.response.data : err.message);
       } finally {
@@ -38,8 +33,9 @@ export default function XFeed() {
       <h2 className="text-xl font-bold mb-4">X Feed</h2>
       <div className="grid gap-4">
         {posts.map((post) => {
-          // Now we can safely destructure since we filtered out posts without attributes.
-          const { DisplayName, TweetText, TweetURL, DatePosted } = post.attributes;
+          // If the post has an attributes object, use it; otherwise use post directly.
+          const data = post.attributes || post;
+          const { DisplayName, TweetText, TweetURL, DatePosted } = data;
           return (
             <div
               key={post.id}
