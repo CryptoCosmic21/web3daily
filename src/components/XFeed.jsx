@@ -10,8 +10,8 @@ export default function XFeed() {
       try {
         const res = await axios.get("https://web3daily-cms-production.up.railway.app/api/xes");
         console.log("API response:", res.data);
-        const data = Array.isArray(res.data.data) ? res.data.data : [];
-        setPosts(data);
+        const dataArray = Array.isArray(res.data.data) ? res.data.data : [];
+        setPosts(dataArray);
       } catch (err) {
         console.error("Error fetching posts:", err.response ? err.response.data : err.message);
       } finally {
@@ -34,12 +34,11 @@ export default function XFeed() {
       <h2 className="text-xl font-bold mb-4">X Feed</h2>
       <div className="grid gap-4">
         {posts.map((post) => {
-          let DisplayName, TweetText, TweetURL, DatePosted;
-          if (post && post.attributes) {
-            ({ DisplayName, TweetText, TweetURL, DatePosted } = post.attributes);
-          } else {
-            ({ DisplayName, TweetText, TweetURL, DatePosted } = post);
-          }
+          // Log the post to see its structure
+          console.log("Rendering post:", post);
+          // Use attributes if available; if not, fallback to the post object.
+          const data = (post && (post.attributes !== undefined && post.attributes !== null)) ? post.attributes : post || {};
+          const { DisplayName, TweetText, TweetURL, DatePosted } = data;
           return (
             <div
               key={post.id}
