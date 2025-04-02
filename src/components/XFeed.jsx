@@ -8,17 +8,13 @@ export default function XFeed() {
   useEffect(() => {
     async function fetchPosts() {
       try {
-        const res = await axios.get(
-          "https://web3daily-cms-production.up.railway.app/api/xes"
-        );
+        const res = await axios.get("https://web3daily-cms-production.up.railway.app/api/xes");
         console.log("API response:", res.data);
+        // Ensure we have an array of posts
         const allPosts = Array.isArray(res.data.data) ? res.data.data : [];
         setPosts(allPosts);
       } catch (err) {
-        console.error(
-          "Error fetching posts:",
-          err.response ? err.response.data : err.message
-        );
+        console.error("Error fetching posts:", err.response ? err.response.data : err.message);
       } finally {
         setLoading(false);
       }
@@ -39,10 +35,9 @@ export default function XFeed() {
       <h2 className="text-xl font-bold mb-4">X Feed</h2>
       <div className="grid gap-4">
         {posts.map((post) => {
-          if (!post) return null;
-          // If attributes exist, use them; otherwise, use the post object directly.
-          const data = post.attributes ? post.attributes : post;
-          // Manually extract fields with defaults
+          // Use post.attributes if available, otherwise use the post object directly.
+          const data = (post && post.attributes) ? post.attributes : (post || {});
+          // Manually extract fields with default fallbacks
           const DisplayName = data.DisplayName || "Untitled";
           const TweetText = data.TweetText || "No content provided.";
           const TweetURL = data.TweetURL || "";
