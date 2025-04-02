@@ -1,6 +1,23 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 
+// Helper function to convert rich text (array of blocks) into a string.
+function renderRichText(richText) {
+  if (Array.isArray(richText)) {
+    return richText
+      .map((block) => {
+        if (block.children && Array.isArray(block.children)) {
+          // Join all text values from the block's children.
+          return block.children.map(child => child.text || "").join("");
+        }
+        return "";
+      })
+      .join("\n");
+  }
+  // If not an array, return it as is.
+  return richText;
+}
+
 export default function XFeed() {
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -37,18 +54,36 @@ export default function XFeed() {
       <h2 className="text-xl font-bold mb-4">X Feed</h2>
       <div className="grid gap-4">
         {posts.map((post) => {
-          // Now destructure directly from the post object
-          const { DisplayName, TweetText, TweetURL, DatePosted } = post;
+          let displayName, tweetText, tweetUrl, datePosted;
+          if (post.attributes) {
+            displayName = post.attributes.DisplayName;
+            tweetText = post.attributes.TweetText;
+            tweetUrl = post.attributes.TweetURL;
+            datePosted = post.attributes.DatePosted;
+          } else {
+            displayName = post.DisplayName;
+            tweetText = post.TweetText;
+            tweetUrl = post.TweetURL;
+            datePosted = post.DatePosted;
+          }
+
+          // Convert rich text to a plain string if needed.
+          const renderedTweetText = renderRichText(tweetText);
+
           return (
             <div
               key={post.id}
               className="bg-gray-900 rounded-xl p-4 shadow-lg border border-gray-700 transform hover:scale-105 transition-transform duration-200"
             >
-              <h2 className="text-xl font-bold mb-1">{DisplayName || "Untitled"}</h2>
-              <p className="text-gray-400 mb-2">{TweetText || "No content provided."}</p>
-              {TweetURL && (
+              <h2 className="text-xl font-bold mb-1">
+                {displayName || "Untitled"}
+              </h2>
+              <p className="text-gray-400 mb-2">
+                {renderedTweetText || "No content provided."}
+              </p>
+              {tweetUrl && (
                 <a
-                  href={TweetURL}
+                  href={tweetUrl}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-blue-400 hover:underline text-sm"
@@ -56,9 +91,9 @@ export default function XFeed() {
                   View Original
                 </a>
               )}
-              {DatePosted && (
+              {datePosted && (
                 <p className="text-sm text-gray-400 mt-2">
-                  Posted on: {new Date(DatePosted).toLocaleString()}
+                  Posted on: {new Date(datePosted).toLocaleString()}
                 </p>
               )}
             </div>
