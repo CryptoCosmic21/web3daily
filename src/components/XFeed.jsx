@@ -12,7 +12,6 @@ export default function XFeed() {
           "https://web3daily-cms-production.up.railway.app/api/xes"
         );
         console.log("API response:", res.data);
-        // Ensure res.data.data is an array before setting state
         const allPosts = Array.isArray(res.data.data) ? res.data.data : [];
         setPosts(allPosts);
       } catch (err) {
@@ -40,20 +39,21 @@ export default function XFeed() {
       <h2 className="text-xl font-bold mb-4">X Feed</h2>
       <div className="grid gap-4">
         {posts.map((post) => {
-          // Use optional chaining to check for attributes; if missing, fall back to the post object
-          const data = post?.attributes ?? post ?? {};
-          const { DisplayName, TweetText, TweetURL, DatePosted } = data;
+          if (!post) return null;
+          // If attributes exist, use them; otherwise, use the post object directly.
+          const data = post.attributes ? post.attributes : post;
+          // Manually extract fields with defaults
+          const DisplayName = data.DisplayName || "Untitled";
+          const TweetText = data.TweetText || "No content provided.";
+          const TweetURL = data.TweetURL || "";
+          const DatePosted = data.DatePosted;
           return (
             <div
               key={post.id}
               className="bg-gray-900 rounded-xl p-4 shadow-lg border border-gray-700 transform hover:scale-105 transition-transform duration-200"
             >
-              <h2 className="text-xl font-bold mb-1">
-                {DisplayName || "Untitled"}
-              </h2>
-              <p className="text-gray-400 mb-2">
-                {TweetText || "No content provided."}
-              </p>
+              <h2 className="text-xl font-bold mb-1">{DisplayName}</h2>
+              <p className="text-gray-400 mb-2">{TweetText}</p>
               {TweetURL && (
                 <a
                   href={TweetURL}
