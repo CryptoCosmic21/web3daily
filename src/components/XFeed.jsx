@@ -1,20 +1,21 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 
-// Helper function to convert rich text (array of blocks) into a string.
+// Helper function to convert rich text blocks into a plain string.
 function renderRichText(richText) {
   if (Array.isArray(richText)) {
     return richText
       .map((block) => {
-        if (block.children && Array.isArray(block.children)) {
-          // Join all text values from the block's children.
+        if (block && block.children && Array.isArray(block.children)) {
           return block.children.map(child => child.text || "").join("");
         }
         return "";
       })
       .join("\n");
   }
-  // If not an array, return it as is.
+  if (typeof richText === "object" && richText !== null) {
+    return JSON.stringify(richText);
+  }
   return richText;
 }
 
@@ -25,7 +26,9 @@ export default function XFeed() {
   useEffect(() => {
     async function fetchPosts() {
       try {
-        const res = await axios.get("https://web3daily-cms-production.up.railway.app/api/xes");
+        const res = await axios.get(
+          "https://web3daily-cms-production.up.railway.app/api/xes"
+        );
         console.log("API response:", res.data);
         const dataArray = Array.isArray(res.data.data) ? res.data.data : [];
         setPosts(dataArray);
@@ -54,36 +57,27 @@ export default function XFeed() {
       <h2 className="text-xl font-bold mb-4">X Feed</h2>
       <div className="grid gap-4">
         {posts.map((post) => {
-          let displayName, tweetText, tweetUrl, datePosted;
-          if (post.attributes) {
-            displayName = post.attributes.DisplayName;
-            tweetText = post.attributes.TweetText;
-            tweetUrl = post.attributes.TweetURL;
-            datePosted = post.attributes.DatePosted;
-          } else {
-            displayName = post.DisplayName;
-            tweetText = post.TweetText;
-            tweetUrl = post.TweetURL;
-            datePosted = post.DatePosted;
+          // Use attributes if available; otherwise, use the post object directly.
+          const data = post && post.attributes ? post.attributes : post;
+          const DisplayName = data.DisplayName || "Untitled";
+          let TweetText = data.TweetText || "No content provided.";
+          // If TweetText is an array (rich text), convert it to a string.
+          if (Array.isArray(TweetText)) {
+            TweetText = renderRichText(TweetText);
           }
-
-          // Convert rich text to a plain string if needed.
-          const renderedTweetText = renderRichText(tweetText);
+          const TweetURL = data.TweetURL || "";
+          const DatePosted = data.DatePosted || null;
 
           return (
             <div
               key={post.id}
               className="bg-gray-900 rounded-xl p-4 shadow-lg border border-gray-700 transform hover:scale-105 transition-transform duration-200"
             >
-              <h2 className="text-xl font-bold mb-1">
-                {displayName || "Untitled"}
-              </h2>
-              <p className="text-gray-400 mb-2">
-                {renderedTweetText || "No content provided."}
-              </p>
-              {tweetUrl && (
+              <h2 className="text-xl font-bold mb-1">{DisplayName}</h2>
+              <p className="text-gray-400 mb-2">{TweetText}</p>
+              {TweetURL && (
                 <a
-                  href={tweetUrl}
+                  href={TweetURL}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-blue-400 hover:underline text-sm"
@@ -91,9 +85,9 @@ export default function XFeed() {
                   View Original
                 </a>
               )}
-              {datePosted && (
+              {DatePosted && (
                 <p className="text-sm text-gray-400 mt-2">
-                  Posted on: {new Date(datePosted).toLocaleString()}
+                  Posted on: {new Date(DatePosted).toLocaleString()}
                 </p>
               )}
             </div>

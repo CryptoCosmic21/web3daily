@@ -10,6 +10,24 @@ const endpoints = {
   "X Spaces": "x-spaces",
 };
 
+// Helper function to convert rich text blocks into a plain string.
+function renderRichText(richText) {
+  if (Array.isArray(richText)) {
+    return richText
+      .map((block) => {
+        if (block && block.children && Array.isArray(block.children)) {
+          return block.children.map(child => child.text || "").join("");
+        }
+        return "";
+      })
+      .join("\n");
+  }
+  if (typeof richText === "object" && richText !== null) {
+    return JSON.stringify(richText);
+  }
+  return richText;
+}
+
 export default function Web3DailyFeed() {
   const [activeTab, setActiveTab] = useState("X");
   const [posts, setPosts] = useState([]);
@@ -23,11 +41,13 @@ export default function Web3DailyFeed() {
           `https://web3daily-cms-production.up.railway.app/api/${endpoints[activeTab]}`
         );
         console.log("API response:", res.data);
-        // Ensure the data is an array
         const dataArray = Array.isArray(res.data.data) ? res.data.data : [];
         setPosts(dataArray);
       } catch (err) {
-        console.error("Error fetching posts:", err.response ? err.response.data : err.message);
+        console.error(
+          "Error fetching posts:",
+          err.response ? err.response.data : err.message
+        );
       } finally {
         setLoading(false);
       }
@@ -61,10 +81,13 @@ export default function Web3DailyFeed() {
       ) : (
         <div className="grid gap-4">
           {posts.map((post) => {
-            // Use post.attributes if available; otherwise, fall back to post itself.
+            // Use attributes if available; otherwise, use the post object directly.
             const data = post?.attributes || post;
             const DisplayName = data.DisplayName || "Untitled";
-            const TweetText = data.TweetText || "No content provided.";
+            let TweetText = data.TweetText || "No content provided.";
+            if (Array.isArray(TweetText)) {
+              TweetText = renderRichText(TweetText);
+            }
             const TweetURL = data.TweetURL || "";
             const DatePosted = data.DatePosted || null;
             return (
