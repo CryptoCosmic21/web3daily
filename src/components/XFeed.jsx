@@ -8,12 +8,18 @@ export default function XFeed() {
   useEffect(() => {
     async function fetchPosts() {
       try {
-        const res = await axios.get("https://web3daily-cms-production.up.railway.app/api/xes");
+        const res = await axios.get(
+          "https://web3daily-cms-production.up.railway.app/api/xes"
+        );
         console.log("API response:", res.data);
+        // Ensure res.data.data is an array
         const dataArray = Array.isArray(res.data.data) ? res.data.data : [];
         setPosts(dataArray);
       } catch (err) {
-        console.error("Error fetching posts:", err.response ? err.response.data : err.message);
+        console.error(
+          "Error fetching posts:",
+          err.response ? err.response.data : err.message
+        );
       } finally {
         setLoading(false);
       }
@@ -34,22 +40,29 @@ export default function XFeed() {
       <h2 className="text-xl font-bold mb-4">X Feed</h2>
       <div className="grid gap-4">
         {posts.map((post) => {
-          // Use optional chaining to safely access fields:
-          const DisplayName = post?.attributes?.DisplayName || post?.DisplayName || "Untitled";
-          const TweetText = post?.attributes?.TweetText || post?.TweetText || "No content provided.";
-          const TweetURL = post?.attributes?.TweetURL || post?.TweetURL || "";
-          const DatePosted = post?.attributes?.DatePosted || post?.DatePosted || null;
+          let displayName, tweetText, tweetUrl, datePosted;
+          if (post.attributes) {
+            displayName = post.attributes.DisplayName;
+            tweetText = post.attributes.TweetText;
+            tweetUrl = post.attributes.TweetURL;
+            datePosted = post.attributes.DatePosted;
+          } else {
+            displayName = post.DisplayName;
+            tweetText = post.TweetText;
+            tweetUrl = post.TweetURL;
+            datePosted = post.DatePosted;
+          }
 
           return (
             <div
               key={post.id}
               className="bg-gray-900 rounded-xl p-4 shadow-lg border border-gray-700 transform hover:scale-105 transition-transform duration-200"
             >
-              <h2 className="text-xl font-bold mb-1">{DisplayName}</h2>
-              <p className="text-gray-400 mb-2">{TweetText}</p>
-              {TweetURL && (
+              <h2 className="text-xl font-bold mb-1">{displayName || "Untitled"}</h2>
+              <p className="text-gray-400 mb-2">{tweetText || "No content provided."}</p>
+              {tweetUrl && (
                 <a
-                  href={TweetURL}
+                  href={tweetUrl}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-blue-400 hover:underline text-sm"
@@ -57,9 +70,9 @@ export default function XFeed() {
                   View Original
                 </a>
               )}
-              {DatePosted && (
+              {datePosted && (
                 <p className="text-sm text-gray-400 mt-2">
-                  Posted on: {new Date(DatePosted).toLocaleString()}
+                  Posted on: {new Date(datePosted).toLocaleString()}
                 </p>
               )}
             </div>
