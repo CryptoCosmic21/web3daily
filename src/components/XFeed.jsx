@@ -8,12 +8,12 @@ export default function XFeed() {
   useEffect(() => {
     async function fetchPosts() {
       try {
-        // Updated endpoint to your Railway URL
         const res = await axios.get("https://web3daily-cms-production.up.railway.app/api/xes");
-        // Expected response structure: { data: { data: [ { id, attributes: { ... } }, ... ] } }
+        console.log("API response:", res.data); // Debug: log entire response
+        // Expected structure: { data: { data: [ { id, attributes: { ... } }, ... ] } }
         setPosts(res.data.data);
       } catch (err) {
-        console.error("Error fetching posts:", err);
+        console.error("Error fetching posts:", err.response ? err.response.data : err.message);
       } finally {
         setLoading(false);
       }
@@ -34,27 +34,32 @@ export default function XFeed() {
       <h2 className="text-xl font-bold mb-4">X Feed</h2>
       <div className="grid gap-4">
         {posts.map((post) => {
-          const attrs = post.attributes;
+          const { DisplayName, TweetText, TweetURL, DatePosted } = post.attributes;
           return (
             <div
               key={post.id}
               className="bg-gray-900 rounded-xl p-4 shadow-lg border border-gray-700 transform hover:scale-105 transition-transform duration-200"
             >
               <h2 className="text-xl font-bold mb-1">
-                {attrs?.DisplayName || "Untitled"}
+                {DisplayName || "Untitled"}
               </h2>
               <p className="text-gray-400 mb-2">
-                {attrs?.TweetText || attrs?.Description || "No content provided."}
+                {TweetText || "No content provided."}
               </p>
-              {(attrs?.TweetURL || attrs?.VideoURL) && (
+              {(TweetURL) && (
                 <a
-                  href={attrs?.TweetURL || attrs?.VideoURL}
+                  href={TweetURL}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-blue-400 hover:underline text-sm"
                 >
                   View Original
                 </a>
+              )}
+              {DatePosted && (
+                <p className="text-sm text-gray-400 mt-2">
+                  Posted on: {new Date(DatePosted).toLocaleString()}
+                </p>
               )}
             </div>
           );

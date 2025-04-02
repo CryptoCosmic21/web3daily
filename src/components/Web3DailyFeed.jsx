@@ -7,7 +7,7 @@ const endpoints = {
   TikTok: "tik-toks",
   YouTube: "youtubes",
   Reddit: "reddits",
-  "X Spaces": "x-spaces",
+  "X Spaces": "x-spaces"
 };
 
 export default function Web3DailyFeed() {
@@ -20,11 +20,12 @@ export default function Web3DailyFeed() {
       setLoading(true);
       try {
         const res = await axios.get(
-          `https://web3daily-cms.onrender.com/api/${endpoints[activeTab]}`
+          `https://web3daily-cms-production.up.railway.app/api/${endpoints[activeTab]}`
         );
+        console.log("API response:", res.data);
         setPosts(res.data.data);
       } catch (err) {
-        console.error("Error fetching posts:", err);
+        console.error("Error fetching posts:", err.response ? err.response.data : err.message);
       } finally {
         setLoading(false);
       }
@@ -58,27 +59,32 @@ export default function Web3DailyFeed() {
       ) : (
         <div className="grid gap-4">
           {posts.map((post) => {
-            const attrs = post.attributes;
+            const { DisplayName, TweetText, TweetURL, DatePosted } = post.attributes;
             return (
               <div
                 key={post.id}
                 className="bg-gray-900 rounded-xl p-4 shadow-lg border border-gray-700 transform hover:scale-105 transition-transform duration-200"
               >
                 <h2 className="text-xl font-bold mb-1">
-                  {attrs?.DisplayName || "Untitled"}
+                  {DisplayName || "Untitled"}
                 </h2>
                 <p className="text-gray-400 mb-2">
-                  {attrs?.TweetText || attrs?.Description || "No content provided."}
+                  {TweetText || "No content provided."}
                 </p>
-                {(attrs?.TweetURL || attrs?.VideoURL) && (
+                {(TweetURL) && (
                   <a
-                    href={attrs?.TweetURL || attrs?.VideoURL}
+                    href={TweetURL}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-blue-400 hover:underline text-sm"
                   >
                     View Original
                   </a>
+                )}
+                {DatePosted && (
+                  <p className="text-sm text-gray-400 mt-2">
+                    Posted on: {new Date(DatePosted).toLocaleString()}
+                  </p>
                 )}
               </div>
             );

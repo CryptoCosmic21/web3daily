@@ -37,7 +37,7 @@ const planetTextureMapMobile = {
 
 // Geometric positions for mobile – central "Atom" at (0,0,0).
 // Outer planets in a tight circle (radius 25) so they are closer to Atom.
-const radiusMobile = 25;
+const radiusMobile = 35;
 const fixedPlanetPositionsMobile = {
   Atom: new THREE.Vector3(0, 0, 0),
   Osmosis: new THREE.Vector3(radiusMobile * Math.cos(0), radiusMobile * Math.sin(0), 0),
@@ -246,14 +246,14 @@ function SolarSystemMobileScene({ onInspect }) {
 /**
  * FocusCamera
  *
- * If no planet is inspected, reset camera to [0,0,220] for a zoomed-out overview.
+ * If no planet is inspected, reset camera to [0,0,200] for a zoomed-out overview.
  */
 function FocusCamera({ inspected }) {
   const { camera } = useThree();
   useEffect(() => {
     if (!inspected) {
       // Move camera back to see entire cluster.
-      camera.position.set(0, 0, 220);
+      camera.position.set(0, 0, 200);
       camera.lookAt(new THREE.Vector3(0, 0, 0));
     }
   }, [inspected, camera]);
@@ -264,7 +264,7 @@ function FocusCamera({ inspected }) {
  * Main Mobile SolarSystem
  * - Tapping a planet => toggles inspection
  * - Tapping the background => clears inspection
- * - Radius is 25, camera is now at [0,0,220] for more zoom out
+ * - Radius is 25, camera is now at [0,0,200] for more zoom out
  */
 export function SolarSystemMobile() {
   const [focusedRef, setFocusedRef] = useState(null);
@@ -286,7 +286,7 @@ export function SolarSystemMobile() {
   return (
     <Canvas
       style={{ width: '100vw', height: '100vh', touchAction: 'manipulation' }}
-      camera={{ position: [0, 0, 220], fov: 50 }}
+      camera={{ position: [0, 0, 200], fov: 50 }}
       onPointerMissed={() => {
         setFocusedRef(null);
         setInspectedPlanet(null);
