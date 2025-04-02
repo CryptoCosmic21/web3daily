@@ -8,12 +8,17 @@ export default function XFeed() {
   useEffect(() => {
     async function fetchPosts() {
       try {
-        const res = await axios.get("https://web3daily-cms-production.up.railway.app/api/xes");
-        console.log("API response:", res.data);
-        // Here we assume that if post.attributes doesn't exist, then the fields are directly on the post object.
+        const res = await axios.get(
+          "https://web3daily-cms-production.up.railway.app/api/xes"
+        );
+        console.log("API response:", res.data); // Debug: log full response
+        // In Strapi v5, the fields are returned directly on the data objects.
         setPosts(res.data.data);
       } catch (err) {
-        console.error("Error fetching posts:", err.response ? err.response.data : err.message);
+        console.error(
+          "Error fetching posts:",
+          err.response ? err.response.data : err.message
+        );
       } finally {
         setLoading(false);
       }
@@ -34,11 +39,8 @@ export default function XFeed() {
       <h2 className="text-xl font-bold mb-4">X Feed</h2>
       <div className="grid gap-4">
         {posts.map((post) => {
-          // Use nullish coalescing operator so if post.attributes is undefined, we default to post.
-          const data = post.attributes ?? post;
-          // Use optional chaining during destructuring to ensure safety.
-          const { DisplayName, TweetText, TweetURL, DatePosted } = data || {};
-
+          // Destructure fields directly from post, since attributes is undefined.
+          const { DisplayName, TweetText, TweetURL, DatePosted } = post;
           return (
             <div
               key={post.id}
