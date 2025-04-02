@@ -12,13 +12,14 @@ export default function XFeed() {
           "https://web3daily-cms-production.up.railway.app/api/xes"
         );
         console.log("API response:", res.data);
-        // Ensure the response is an array
-        const dataArray = Array.isArray(res.data.data) ? res.data.data : [];
-        // Filter out any posts that are missing a valid data object
-        const validPosts = dataArray.filter((post) => post && (post.attributes || post));
-        setPosts(validPosts);
+        // Ensure res.data.data is an array before setting state
+        const allPosts = Array.isArray(res.data.data) ? res.data.data : [];
+        setPosts(allPosts);
       } catch (err) {
-        console.error("Error fetching posts:", err.response ? err.response.data : err.message);
+        console.error(
+          "Error fetching posts:",
+          err.response ? err.response.data : err.message
+        );
       } finally {
         setLoading(false);
       }
@@ -39,9 +40,8 @@ export default function XFeed() {
       <h2 className="text-xl font-bold mb-4">X Feed</h2>
       <div className="grid gap-4">
         {posts.map((post) => {
-          // Use attributes if available; otherwise, use the post object directly.
-          const data = post && post.attributes ? post.attributes : post;
-          if (!data) return null;
+          // Use optional chaining to check for attributes; if missing, fall back to the post object
+          const data = post?.attributes ?? post ?? {};
           const { DisplayName, TweetText, TweetURL, DatePosted } = data;
           return (
             <div
