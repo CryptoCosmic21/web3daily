@@ -10,7 +10,7 @@ export default function XFeed() {
       try {
         const res = await axios.get("https://web3daily-cms-production.up.railway.app/api/xes");
         console.log("API response:", res.data); // Debug: log entire response
-        // Expected structure: { data: { data: [ { id, attributes: { ... } }, ... ] } }
+        // Expected response structure: { data: { data: [ { id, attributes: { ... } }, ... ] } }
         setPosts(res.data.data);
       } catch (err) {
         console.error("Error fetching posts:", err.response ? err.response.data : err.message);
@@ -34,6 +34,10 @@ export default function XFeed() {
       <h2 className="text-xl font-bold mb-4">X Feed</h2>
       <div className="grid gap-4">
         {posts.map((post) => {
+          if (!post.attributes) {
+            console.warn(`Post with ID ${post.id} has no attributes`, post);
+            return null;
+          }
           const { DisplayName, TweetText, TweetURL, DatePosted } = post.attributes;
           return (
             <div
@@ -46,7 +50,7 @@ export default function XFeed() {
               <p className="text-gray-400 mb-2">
                 {TweetText || "No content provided."}
               </p>
-              {(TweetURL) && (
+              {TweetURL && (
                 <a
                   href={TweetURL}
                   target="_blank"
