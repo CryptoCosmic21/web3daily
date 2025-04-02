@@ -10,6 +10,7 @@ export default function XFeed() {
       try {
         const res = await axios.get("https://web3daily-cms-production.up.railway.app/api/xes");
         console.log("API response:", res.data);
+        // Here we assume that if post.attributes doesn't exist, then the fields are directly on the post object.
         setPosts(res.data.data);
       } catch (err) {
         console.error("Error fetching posts:", err.response ? err.response.data : err.message);
@@ -33,9 +34,11 @@ export default function XFeed() {
       <h2 className="text-xl font-bold mb-4">X Feed</h2>
       <div className="grid gap-4">
         {posts.map((post) => {
-          // If the post has an attributes object, use it; otherwise use post directly.
-          const data = post.attributes || post;
-          const { DisplayName, TweetText, TweetURL, DatePosted } = data;
+          // Use nullish coalescing operator so if post.attributes is undefined, we default to post.
+          const data = post.attributes ?? post;
+          // Use optional chaining during destructuring to ensure safety.
+          const { DisplayName, TweetText, TweetURL, DatePosted } = data || {};
+
           return (
             <div
               key={post.id}
