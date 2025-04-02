@@ -8,12 +8,18 @@ export default function XFeed() {
   useEffect(() => {
     async function fetchPosts() {
       try {
-        const res = await axios.get("https://web3daily-cms-production.up.railway.app/api/xes");
+        const res = await axios.get(
+          "https://web3daily-cms-production.up.railway.app/api/xes"
+        );
         console.log("API response:", res.data);
-        // Expected response structure: { data: [ { id, attributes: { ... } }, ... ], meta: { ... } }
-        setPosts(res.data.data);
+        // Filter out any posts that don't have valid attributes
+        const validPosts = res.data.data.filter((post) => post.attributes);
+        setPosts(validPosts);
       } catch (err) {
-        console.error("Error fetching posts:", err.response ? err.response.data : err.message);
+        console.error(
+          "Error fetching posts:",
+          err.response ? err.response.data : err.message
+        );
       } finally {
         setLoading(false);
       }
@@ -34,11 +40,8 @@ export default function XFeed() {
       <h2 className="text-xl font-bold mb-4">X Feed</h2>
       <div className="grid gap-4">
         {posts.map((post) => {
-          if (!post.attributes) {
-            console.warn(`Post with ID ${post.id} has no attributes`, post);
-            return null; // Skip posts without attributes
-          }
-          const { DisplayName, TweetText, TweetURL, DatePosted } = post.attributes;
+          const { DisplayName, TweetText, TweetURL, DatePosted } =
+            post.attributes;
           return (
             <div
               key={post.id}
