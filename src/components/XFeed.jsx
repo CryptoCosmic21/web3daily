@@ -10,9 +10,8 @@ export default function XFeed() {
       try {
         const res = await axios.get("https://web3daily-cms-production.up.railway.app/api/xes");
         console.log("API response:", res.data);
-        // Ensure we have an array of posts
-        const allPosts = Array.isArray(res.data.data) ? res.data.data : [];
-        setPosts(allPosts);
+        const data = Array.isArray(res.data.data) ? res.data.data : [];
+        setPosts(data);
       } catch (err) {
         console.error("Error fetching posts:", err.response ? err.response.data : err.message);
       } finally {
@@ -35,20 +34,19 @@ export default function XFeed() {
       <h2 className="text-xl font-bold mb-4">X Feed</h2>
       <div className="grid gap-4">
         {posts.map((post) => {
-          // Use post.attributes if available, otherwise use the post object directly.
-          const data = (post && post.attributes) ? post.attributes : (post || {});
-          // Manually extract fields with default fallbacks
-          const DisplayName = data.DisplayName || "Untitled";
-          const TweetText = data.TweetText || "No content provided.";
-          const TweetURL = data.TweetURL || "";
-          const DatePosted = data.DatePosted;
+          let DisplayName, TweetText, TweetURL, DatePosted;
+          if (post && post.attributes) {
+            ({ DisplayName, TweetText, TweetURL, DatePosted } = post.attributes);
+          } else {
+            ({ DisplayName, TweetText, TweetURL, DatePosted } = post);
+          }
           return (
             <div
               key={post.id}
               className="bg-gray-900 rounded-xl p-4 shadow-lg border border-gray-700 transform hover:scale-105 transition-transform duration-200"
             >
-              <h2 className="text-xl font-bold mb-1">{DisplayName}</h2>
-              <p className="text-gray-400 mb-2">{TweetText}</p>
+              <h2 className="text-xl font-bold mb-1">{DisplayName || "Untitled"}</h2>
+              <p className="text-gray-400 mb-2">{TweetText || "No content provided."}</p>
               {TweetURL && (
                 <a
                   href={TweetURL}
